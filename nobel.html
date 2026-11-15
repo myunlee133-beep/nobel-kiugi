@@ -666,7 +666,7 @@ function grow(k,v,mul=1){ const s=S[k];
   if(rnd()<Math.max(.08,.6-(s-WALL)*.03)){S[k]=clamp(s+v*.45,0,100);(S.brk||(S.brk=[])).push(k);}
   else S[k]=clamp(s+v*.03,0,100); }
 const label=p=>p<20?'매우 낮음':p<40?'낮음':p<60?'반반':p<80?'높음':'매우 높음';
-const won=v=>(v<0?'-':'')+Math.abs(Math.round(v)).toLocaleString('ko-KR')+'만 원';
+const won=v=>{const a=Math.abs(Math.round(v)); return (v<0&&a?'-':'')+(a>=10000?+(a/10000).toFixed(2)+'억 원':a.toLocaleString('ko-KR')+'만 원');}; // 1억이 넘으면 1.79억 원
 const age=()=>20+Math.floor(S.t/2);
 const grad=()=>S.stage==='ms'||S.stage==='phd';
 const pts=()=>S.papers.reduce((a,p)=>a+p.pt,0);
