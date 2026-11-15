@@ -24,6 +24,8 @@ for(let n=0;n<N;n++){
     assert(!Number.isNaN(S.money)&&!Number.isNaN(S.hp)&&S.joy>=0&&S.joy<=100);
     assert(S.t<=40,'시제품 구간을 넘김 seed '+n);
   }
+  for(const l of S.log){ const x=l.s+' '+(l.sub||''); assert(!/\((가|과|를|는)\)/.test(x),'조사 자리표시가 남음: '+x);
+    assert((l.s.match(/"/g)||[]).length%2===0,'따옴표가 닫히지 않은 기록: '+l.s); }
   ends[S.end.name]=(ends[S.end.name]||0)+1; st.sem+=S.t; st.money+=S.money; st.hosp+=S.hosp; st.papers+=S.papers.length;
   if(S.end.kind==='grad'){st.grads++;st.phd+=S.ss;}
 }
@@ -37,3 +39,10 @@ console.log('평균 학기',(st.sem/N).toFixed(1),'박사 졸업자 평균 박�
 // 연인이 있어도 고백할 수 있다. 성공하면 기존 연인과는 이별
 { const S=G.S; S.partner={name:'하린',fav:3}; S.ppl=[{n:'정유진',role:'학과 친구',img:'연인',v:100}]; S.cha=100; S.t++;
   G.relAct(0,'confess'); assert(S.partner&&(S.partner.name==='정유진'?S.ppl.length===0:S.partner.name==='하린'),'환승 고백'); }
+// 조사: 받침 있으면 이·과·을·은, 없으면 가·와·를·는. 따옴표 뒤도 앞 글자를 본다
+assert.strictEqual(G.josa('건우이(가) 왔다'),'건우가 왔다'); assert.strictEqual(G.josa('서윤이(가) 왔다'),'서윤이 왔다');
+assert.strictEqual(G.josa('채원와(과) 이별'),'채원과 이별'); assert.strictEqual(G.josa("칭호 '첫 논문'을(를)"),"칭호 '첫 논문'을");
+// 첫 문장은 닫는 따옴표까지
+assert.deepStrictEqual(G.split1('"그래, 신중한 게 좋지." 교수의 표정이 조금 쓸쓸했다.'),['"그래, 신중한 게 좋지."','교수의 표정이 조금 쓸쓸했다.']);
+assert.deepStrictEqual(G.split1('"관운이 있어. 사람들이 알아서 도와줘." 복채가 아깝지 않았다.'),['"관운이 있어. 사람들이 알아서 도와줘."','복채가 아깝지 않았다.']);
+console.log('조사·문장 나누기 점검 통과');
