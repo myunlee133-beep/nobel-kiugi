@@ -8,7 +8,7 @@ for(let n=0;n<N;n++){
   while(!S.end){ assert(++guard<2000,'끝나지 않는 인생 seed '+n);
     const v=G.view();
     if(v){ // 은퇴 선택지는 고르지 않는 평범한 플레이어
-      const ok=v.ch.map((c,i)=>i).filter(i=>!/은퇴/.test(v.ch[i].l)); G.resolve(ok[Math.floor(Math.random()*ok.length)]); continue; }
+      const ok=v.ch.map((c,i)=>i).filter(i=>!/은퇴/.test(v.ch[i].l)&&!v.ch[i].lock); G.resolve(ok[Math.floor(Math.random()*ok.length)]); continue; }
     if(S.pend){ G.reveal(); continue; } // 진행 화면이 달을 하나씩 꺼내는 자리
     if(S.army===0&&S.stage==='ug'){ const ks=Object.keys(G.UGF); G.focus(ks[Math.floor(Math.random()*ks.length)]); } // 학부생: 초점 5종 중 아무거나
     else if(S.army===0){ // 대학원생, 평범한 플레이어: 학업 위주, 체력이 낮으면 휴식을 늘린다. 5% 단위로 합 100.
@@ -25,7 +25,8 @@ for(let n=0;n<N;n++){
     assert(S.t<=40,'시제품 구간을 넘김 seed '+n);
   }
   for(const l of S.log){ const x=l.s+' '+(l.sub||''); assert(!/\((가|과|를|는)\)/.test(x),'조사 자리표시가 남음: '+x);
-    assert((l.s.match(/"/g)||[]).length%2===0,'따옴표가 닫히지 않은 기록: '+l.s); }
+    assert((l.s.match(/"/g)||[]).length%2===0,'따옴표가 닫히지 않은 기록: '+l.s);
+    for(const k in l.d||{}){ assert(!(l.tone==='+'&&l.d[k]<0),'좋은 멘트에 감소: '+l.s+' '+k); assert(!(l.tone==='-'&&l.d[k]>0),'나쁜 멘트에 증가: '+l.s+' '+k); } }
   ends[S.end.name]=(ends[S.end.name]||0)+1; st.sem+=S.t; st.money+=S.money; st.hosp+=S.hosp; st.papers+=S.papers.length;
   if(S.end.kind==='grad'){st.grads++;st.phd+=S.ss;}
 }
