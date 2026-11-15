@@ -401,19 +401,19 @@ p{margin:0}
   @keyframes eflip{0%{opacity:0;transform:translateY(-10px) scale(1.6)}100%{opacity:1;transform:none}}}
 
 /* ===== 2026-11-15 다크 UI: 글 위주, 그림은 위의 장면 한 장만 ===== */
-:root{--px:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic","Galmuri11",sans-serif;--pxd:"Galmuri11","Apple SD Gothic Neo",sans-serif}
-body{font-size:14px;line-height:1.55}
-#app{gap:10px;padding-block:10px}
-.scroll{gap:10px}
-h1,h2,.num{font-family:var(--pxd)}
-h2{font-size:16px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:none!important;padding:12px 14px}
-.card::before,.card::after{display:none!important}
-img.ico,.endbox img,.btn img{display:none!important}
-.rule{display:none}
-.chip{background:var(--t26);color:var(--muted);border:0}
-.btn{border-radius:8px;box-shadow:none!important}
-.btn.big{padding:12px;font-size:16px}
+:root[data-theme=dark]{--px:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic","Galmuri11",sans-serif;--pxd:"Galmuri11","Apple SD Gothic Neo",sans-serif}
+:root[data-theme=dark] body{font-size:14px;line-height:1.55}
+:root[data-theme=dark] #app{gap:10px;padding-block:10px}
+:root[data-theme=dark] .scroll{gap:10px}
+:root[data-theme=dark] h1,:root[data-theme=dark] h2,:root[data-theme=dark] .num{font-family:var(--pxd)}
+:root[data-theme=dark] h2{font-size:16px}
+:root[data-theme=dark] .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:none!important;padding:12px 14px}
+:root[data-theme=dark] .card::before,:root[data-theme=dark] .card::after{display:none!important}
+:root[data-theme=dark] img.ico,:root[data-theme=dark] .endbox img,:root[data-theme=dark] .btn img{display:none!important}
+:root[data-theme=dark] .rule{display:none}
+:root[data-theme=dark] .chip{background:var(--t26);color:var(--muted);border:0}
+:root[data-theme=dark] .btn{border-radius:8px;box-shadow:none!important}
+:root[data-theme=dark] .btn.big{padding:12px;font-size:16px}
 .lnk{color:var(--muted);font-size:13px;text-decoration:underline;padding:6px 10px}
 .endbox{display:flex;flex-direction:column;gap:6px;padding:4px 0 10px}
 .endbox .row{display:flex;justify-content:center;gap:12px}
@@ -441,11 +441,11 @@ img.ico,.endbox img,.btn img{display:none!important}
 .strip .meter{height:4px;background:var(--t14);border:0}
 .strip .meter i{background:var(--bar)}
 /* 접기 */
-.fold{padding:10px 14px}
-.fold summary{font-size:15px;color:var(--ink);gap:8px}
-.fold summary::before{font-size:10px;color:var(--muted)}
+:root[data-theme=dark] .fold{padding:10px 14px}
+:root[data-theme=dark] .fold summary{font-size:15px;color:var(--ink);gap:8px}
+:root[data-theme=dark] .fold summary::before{font-size:10px;color:var(--muted)}
 .fold summary em{margin-left:auto;font-style:normal;font-size:13px;color:var(--muted);font-weight:400}
-.fold[open] summary{margin-bottom:6px}
+:root[data-theme=dark] .fold[open] summary{margin-bottom:6px}
 /* 초점 */
 .card.focus header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .card.focus header em{font-style:normal;color:var(--accent);font-weight:700;font-size:14px}
@@ -454,35 +454,35 @@ img.ico,.endbox img,.btn img{display:none!important}
 .foc button b{font-size:14px}.foc button small{font-size:11px;color:var(--muted)}
 .foc button.on{border-color:var(--accent);background:var(--t17)}.foc button.on b{color:var(--accent)}
 /* 목록 줄 */
-.fxl li{font-size:14px;padding:4px 0;border-bottom:1px solid var(--t15)}
-.fxl li:last-child{border-bottom:0}
+:root[data-theme=dark] .fxl li{font-size:14px;padding:4px 0;border-bottom:1px solid var(--t15)}
+:root[data-theme=dark] .fxl li:last-child{border-bottom:0}
 .fxh{margin:10px 0 2px;font-size:13px;color:var(--muted)}
-.fo{padding:7px 4px;gap:8px;border-bottom:1px solid var(--line)}
-.fo .fn b{font-size:15px}.fo .fn small{font-size:12px}
-.fo .fr{font-size:11px}
-.xr{border-bottom:1px solid var(--t15)}.xr>i{border:1px solid var(--t23);border-radius:4px}
-.seg button{border:1px solid var(--line);border-radius:6px}
-.inv,.invs>div{background:none}
-.card.now{padding:10px 12px}.card.now p{font-size:15px;margin:4px 0 0}
-.rec{padding:6px 0;border-bottom:1px solid var(--t15)}
-.top{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:none!important;margin:0;padding:8px 10px}
-.top::before,.top::after{display:none!important}
-.trow .homebtn{background:var(--t26);color:var(--ink);box-shadow:none!important;border-radius:6px;width:32px;height:32px}
-.trow .who{font-size:18px;border-inline:1px solid var(--line)}
-.trow .ovr b{font-size:22px;color:var(--accent)}
-.tplan,.tplan span{border-color:var(--line)}
-.tplan b{background:none;color:var(--accent)}
-.tprog .meter{background:var(--t14);box-shadow:none;height:6px}
-.tprog .meter>i{background:var(--accent)}
-.tbtn{background:var(--t26);color:var(--ink);box-shadow:none!important;border-radius:6px;font-size:13px}
-.tbtn.on{background:var(--accent);color:var(--t1)}
-.fold{padding:8px 12px}
-.card.book header{display:flex;justify-content:space-between;align-items:baseline}
-.rec{background:none!important}
-.fold{display:block}.fold[open]>*:not(summary){margin-top:6px}
+:root[data-theme=dark] .fo{padding:7px 4px;gap:8px;border-bottom:1px solid var(--line)}
+:root[data-theme=dark] .fo .fn b{font-size:15px}:root[data-theme=dark] .fo .fn small{font-size:12px}
+:root[data-theme=dark] .fo .fr{font-size:11px}
+:root[data-theme=dark] .xr{border-bottom:1px solid var(--t15)}:root[data-theme=dark] .xr>i{border:1px solid var(--t23);border-radius:4px}
+:root[data-theme=dark] .seg button{border:1px solid var(--line);border-radius:6px}
+:root[data-theme=dark] .inv,:root[data-theme=dark] .invs>div{background:none}
+:root[data-theme=dark] .card.now{padding:10px 12px}:root[data-theme=dark] .card.now p{font-size:15px;margin:4px 0 0}
+:root[data-theme=dark] .rec{padding:6px 0;border-bottom:1px solid var(--t15)}
+:root[data-theme=dark] .top{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:none!important;margin:0;padding:8px 10px}
+:root[data-theme=dark] .top::before,:root[data-theme=dark] .top::after{display:none!important}
+:root[data-theme=dark] .trow .homebtn{background:var(--t26);color:var(--ink);box-shadow:none!important;border-radius:6px;width:32px;height:32px}
+:root[data-theme=dark] .trow .who{font-size:18px;border-inline:1px solid var(--line)}
+:root[data-theme=dark] .trow .ovr b{font-size:22px;color:var(--accent)}
+:root[data-theme=dark] .tplan,:root[data-theme=dark] .tplan span{border-color:var(--line)}
+:root[data-theme=dark] .tplan b{background:none;color:var(--accent)}
+:root[data-theme=dark] .tprog .meter{background:var(--t14);box-shadow:none;height:6px}
+:root[data-theme=dark] .tprog .meter>i{background:var(--accent)}
+:root[data-theme=dark] .tbtn{background:var(--t26);color:var(--ink);box-shadow:none!important;border-radius:6px;font-size:13px}
+:root[data-theme=dark] .tbtn.on{background:var(--accent);color:var(--t1)}
+:root[data-theme=dark] .fold{padding:8px 12px}
+:root[data-theme=dark] .card.book header{display:flex;justify-content:space-between;align-items:baseline}
+:root[data-theme=dark] .rec{background:none!important}
+:root[data-theme=dark] .fold{display:block}:root[data-theme=dark] .fold[open]>*:not(summary){margin-top:6px}
 .scn-c b.up{color:#7ee2a8}.scn-c b.down{color:#ff8a8a}
-.fold>summary{margin:0;line-height:1.5}.fold:not([open]){padding-block:9px}.fold[open]>summary{margin-bottom:8px}
-.overlay{background:rgba(5,7,10,.72)!important}
+:root[data-theme=dark] .fold>summary{margin:0;line-height:1.5}:root[data-theme=dark] .fold:not([open]){padding-block:9px}:root[data-theme=dark] .fold[open]>summary{margin-bottom:8px}
+:root[data-theme=dark] .overlay{background:rgba(5,7,10,.72)!important}
 .subf{display:flex;flex-direction:column;gap:6px}
 .subf .fold{background:transparent;border:1px solid var(--line);border-radius:8px;padding:7px 10px}
 .backtab{align-self:flex-start;font-size:13px;color:var(--accent);padding:2px 4px;text-decoration:underline}
@@ -491,12 +491,19 @@ img.ico,.endbox img,.btn img{display:none!important}
 .spr svg{width:44px;height:44px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.45))}
 .spr small{font-size:10px;color:#fff;background:rgba(10,12,15,.7);padding:0 5px;border-radius:4px;white-space:nowrap}
 @keyframes sprb{50%{transform:translateY(-4px)}}
-.fo,.fo.ug{grid-template-columns:minmax(0,1fr) auto;padding:8px 4px}
-.fo .fn{border-left:0;padding-left:0}
-.fo .fc{border-left:0;padding-left:0}
-.fo .fr{flex-direction:row;gap:4px}
-.fo .fr i{width:18px;height:18px;border-width:2px;font-size:11px}
+:root[data-theme=dark] .fo,:root[data-theme=dark] .fo.ug{grid-template-columns:minmax(0,1fr) auto;padding:8px 4px}
+:root[data-theme=dark] .fo .fn{border-left:0;padding-left:0}
+:root[data-theme=dark] .fo .fc{border-left:0;padding-left:0}
+:root[data-theme=dark] .fo .fr{flex-direction:row;gap:4px}
+:root[data-theme=dark] .fo .fr i{width:18px;height:18px;border-width:2px;font-size:11px}
 .lnk{font-size:12px}
+
+.scn-c{flex-wrap:nowrap;gap:4px}
+.scn-c span{flex:1 1 0;min-width:0;padding:3px 5px}
+.scn-c small{font-size:10px}
+.scn-c b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scn-img img{display:block;width:100%;height:190px;object-fit:cover;image-rendering:pixelated}
+.strip .meter{height:5px}
 </style>
 <div id="app"></div>
 <script>
