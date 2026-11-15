@@ -18,6 +18,7 @@ for(let n=0;n<N;n++){
     S.act=[null,...Object.keys(G.ACTS)][Math.floor(Math.random()*6)]; // 학업 토글: 5종 중 하나 또는 선택 안 함
     const r=a=>a[Math.floor(Math.random()*a.length)]; // 투자 접기: 생활·운용 하나씩, 구매는 아무거나
     S.life=r(Object.keys(G.LIFE)); S.port=r(Object.keys(G.PORT)); S.buy=Object.fromEntries(Object.keys(G.BUY).map(k=>[k,Math.random()<.3]));
+    for(let j=0;j<3;j++){const ws=[...(S.ppl||[]).map((_,i)=>i),'r',...(S.partner?['p']:[]),...(S.lab?['a']:[])], acts=['call','meal','listen','study','gift','notes','job','coauth','advice','rally','confess','propose']; G.relAct(ws[Math.floor(Math.random()*ws.length)],acts[Math.floor(Math.random()*acts.length)]);} // 관계 행동 아무거나
     G.advance();
     assert(Object.values(S.alloc).reduce((a,b)=>a+b,0)===100,'배분 합 100 seed '+n);
     for(const k of G.STATS) assert(S[k]>=0&&S[k]<=100&&!Number.isNaN(S[k]),k+' 범위 seed '+n);
@@ -32,13 +33,14 @@ for(let n=0;n<N;n++){
 }
 console.log(ends);
 console.log('평균 학기',(st.sem/N).toFixed(1),'박사 졸업자 평균 박사 학기',(st.phd/st.grads).toFixed(1),'평균 재산',Math.round(st.money/N),'평균 입원',(st.hosp/N).toFixed(2),'평균 논문',(st.papers/N).toFixed(1));
-// 관계 행동: 학기당 한 사람에게 한 번, 매력 조건, 고백하면 연인이 된다
-{ G.newLife({seed:7,gender:'여'}); const S=G.S; S.money=1000; S.cha=60; S.ppl=[{n:'김서연',role:'학과 친구',img:'연인',v:95},{n:'이지훈',role:'학과 친구',img:'라이벌',v:50}];
-  G.relAct(1,'meal'); assert(S.money===995&&S.ppl[1].v>=56,'밥'); G.relAct(1,'gift'); assert(S.money===995,'학기당 한 번');
-  S.cha=10; G.relAct(0,'trip'); assert(S.money===995,'여행 매력 조건'); S.cha=60;
-  G.relAct(0,'confess'); assert(S.partner?S.ppl.length===1:S.ppl[0].v===85,'고백'); }
+// 관계 행동: 학기당 3번, 도와주기는 호감을 올리고 부탁하기는 호감을 쓴다, 고백하면 연인이 된다
+{ G.newLife({seed:7,gender:'여'}); const S=G.S; S.money=1000; S.cha=60; S.ap=3; S.ppl=[{n:'김서연',role:'학과 친구',img:'연인',v:95},{n:'이지훈',role:'학과 친구',img:'라이벌',v:50}];
+  const v0=S.ppl[1].v; G.relAct(1,'meal'); assert(S.money===995&&S.ppl[1].v>v0&&S.ap===2,'밥');
+  G.relAct(1,'notes'); assert(S.ppl[1].v<v0+20&&S.ap===1,'족보 부탁은 호감을 쓴다');
+  G.relAct(0,'confess'); assert(S.ap===0&&(S.partner?S.ppl.length===1:S.ppl[0].v===85),'고백');
+  const m=S.money; G.relAct(S.ppl.length-1,'gift'); assert(S.money===m,'행동을 다 쓰면 못 한다'); }
 // 연인이 있어도 고백할 수 있다. 성공하면 기존 연인과는 이별
-{ const S=G.S; S.partner={name:'하린',fav:3}; S.ppl=[{n:'정유진',role:'학과 친구',img:'연인',v:100}]; S.cha=100; S.t++;
+{ const S=G.S; S.partner={name:'하린',fav:3}; S.ppl=[{n:'정유진',role:'학과 친구',img:'연인',v:100}]; S.cha=100; S.ap=3;
   G.relAct(0,'confess'); assert(S.partner&&(S.partner.name==='정유진'?S.ppl.length===0:S.partner.name==='하린'),'환승 고백'); }
 // 조사: 받침 있으면 이·과·을·은, 없으면 가·와·를·는. 따옴표 뒤도 앞 글자를 본다
 assert.strictEqual(G.josa('건우이(가) 왔다'),'건우가 왔다'); assert.strictEqual(G.josa('서윤이(가) 왔다'),'서윤이 왔다');

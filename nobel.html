@@ -497,6 +497,19 @@ p{margin:0}
 :root[data-theme=dark] .fo .fr{flex-direction:row;gap:4px}
 :root[data-theme=dark] .fo .fr i{width:18px;height:18px;border-width:2px;font-size:11px}
 .lnk{font-size:12px}
+.rap{display:flex;flex-direction:column;margin:6px 0 4px;padding:0;text-align:left!important;font-size:14px}
+.rap small{font-size:11px;color:var(--muted)}
+.rtabs{display:flex!important;gap:4px;flex-wrap:nowrap}.rtabs button{flex:1;min-width:0;padding:5px 2px!important;font-size:13px!important;box-shadow:none!important}
+.rp2{padding:8px 0;border-bottom:1px solid var(--line)}
+.rph{display:grid;grid-template-columns:40px 1fr 74px;gap:10px;align-items:center}
+img.face{display:block!important;width:40px;height:40px;object-fit:contain;image-rendering:pixelated}
+.rpn{display:flex;flex-direction:column;min-width:0;line-height:1.3}.rpn b{font-size:15px}.rpn small{font-size:11px;color:var(--muted)}
+.rpv{text-align:right}.rpv b{font-size:16px}.rpv .meter{height:4px;margin-top:3px}.rpv .meter i{background:var(--hi)}
+.rpa{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.rc{display:flex;flex-direction:column;align-items:flex-start;padding:3px 7px;border:1px solid var(--line);border-radius:6px;line-height:1.25;font-size:12px}
+.rc b{font-size:12px}.rc small{font-size:10px;color:var(--muted)}
+.rc.ask{border-style:dashed}.rc.love{border-color:var(--hi)}
+.rc:disabled{opacity:.35}
 
 .scn-c{flex-wrap:nowrap;gap:4px}
 .scn-c span{flex:1 1 0;min-width:0;padding:3px 5px}
@@ -623,6 +636,28 @@ const NEGF={res:'공부가 손에 잡히지 않는 한 주였다.',lec:'발표 �
 const dtxt=d=>Object.entries(d||{}).filter(([,v])=>Math.abs(v)>=.1).map(([k,v])=>`${DN[k]} ${v>0?'+':''}${Math.round(v*10)/10}`).join(', ');
 // 사건: st 단계, cond 조건, t 글, c 선택지 {l, j:[능력치,요구], risk:성공확률, ok:[효과,글], no:[효과,글]}
 const EV=[
+ {id:'p_loan',st:'ug gr',who:'f',t:()=>`${evN()}이(가) 급하게 50만 원만 빌려 달라고 한다. 다음 달에 꼭 갚겠다고 한다.`,c:[
+   {l:'빌려준다',risk:70,ok:[{pv:12},'약속대로 돌려받았다. 커피까지 얻어 마셨다.'],no:[{money:-50,pv:4},'아직 못 받았다. 다시 말 꺼내기가 어렵다.']},
+   {l:'사정을 설명하고 거절한다',j:['cha',40],ok:[{pv:-2},'"아냐, 내가 미안하지." 서운한 기색은 없었다.'],no:[{pv:-12},'답장이 점점 짧아졌다.']}]},
+ {id:'p_study',st:'ug',who:'f',t:()=>`시험 2주 전, ${evN()}이(가) 둘이서 스터디를 하자고 한다.`,c:[
+   {l:'같이 한다',ok:[{res:2,pv:8},'서로 모르는 걸 채워 줬다. 둘 다 점수가 올랐다.']},
+   {l:'혼자가 편하다고 말한다',ok:[{res:1,pv:-4},'혼자 공부했다. 조용했고, 조금 외로웠다.']}]},
+ {id:'p_fight',st:'ug gr',who:'f',t:()=>`단톡방에서 한 말이 오해를 샀다. ${evN()}이(가) 며칠째 답이 없다.`,c:[
+   {l:'먼저 찾아가 사과한다',j:['cha',35],ok:[{pv:10,joy:2},'"나도 예민했어." 오히려 더 가까워졌다.'],no:[{pv:-6},'사과는 받았지만 어색함은 남았다.']},
+   {l:'시간이 해결해 주길 기다린다',ok:[{pv:-15,joy:-3},'시간은 아무것도 해결해 주지 않았다.']}]},
+ {id:'p_intro',st:'ug gr',who:'f',cond:S=>S.ppl.some(x=>x.v>=50),t:()=>`${evN()}이(가) 아는 회사에 인턴 자리가 났다며 소개해 주겠다고 한다.`,c:[
+   {l:'고맙게 받는다',ok:[{money:150,eco:2,pv:3,hp:-8},'한 달 동안 일을 배웠다. 통장도 조금 두꺼워졌다.']},
+   {l:'공부에 집중하겠다며 사양한다',ok:[{res:1},'아쉬웠지만 책상에 앉았다.']}]},
+ {id:'p_anniv',st:'ug gr',who:'p',t:()=>`${evN()}와(과)의 기념일이 다가온다.`,c:[
+   {l:'근사한 레스토랑을 예약한다',ok:[{money:-20,pv:15,joy:5},'오래 기억에 남을 저녁이었다.']},
+   {l:'손편지를 쓴다',ok:[{pv:10,joy:3},'편지를 읽고 한참 말이 없었다.']},
+   {l:'바빠서 그냥 넘긴다',ok:[{pv:-25,joy:-4},'"기념일인 거 알았어?" 대답할 말이 없었다.']}]},
+ {id:'p_rival',st:'ug gr',who:'r',t:()=>`${evN()}이(가) 강의실에서 대놓고 내 성적을 물어본다. 다들 쳐다본다.`,c:[
+   {l:'담담하게 받아친다',j:['lec',45],ok:[{lec:2,pv:5},'"다음엔 내가 이긴다." 묘하게 인정받은 기분이다.'],no:[{joy:-3,pv:-5},'말이 꼬였다. 얼굴이 뜨거웠다.']},
+   {l:'웃어넘긴다',ok:[{joy:-1},'신경 쓰이지만 티 내지 않았다.']}]},
+ {id:'p_adv',st:'gr',who:'a',t:()=>`${evN()}이(가) 점심을 같이 먹자고 한다. 실험이 한창이다.`,c:[
+   {l:'따라간다',ok:[{pv:15,hp:-3},'연구 얘기보다 교수님 학창 시절 얘기를 더 많이 들었다.']},
+   {l:'실험 핑계로 사양한다',ok:[{pv:-10,prog:2},'실험은 조금 진척됐다. 교수님 표정은 아쉬워 보였다.']}]},
  {id:'team',st:'ug',t:()=>'조별 과제 발표가 사흘 남았다. 조원 둘은 단톡방에서 읽음 표시만 남기고 사라졌다.',c:[
    {l:'혼자 다 한다',ok:[{res:2,hp:-10},'A+를 받았다. 사라진 둘도 A+를 받았다.']},
    {l:'교수에게 알린다',j:['cha',35],ok:[{joy:4},'교수가 조를 다시 짜 주었다.'],no:[{cha:-2},'"그런 것도 사회생활이에요." 분위기만 싸해졌다.']},
@@ -793,6 +828,7 @@ function fx(e,why){ if(!e)return; for(const k in e){const v=e[k]; // why: 돈이
   else if(k==='adv'){if(S.lab)S.lab.fav=clamp(S.lab.fav+v,0,5);}
   else if(k==='rival')S.rival.fav=clamp(S.rival.fav+v,0,5);
   else if(k==='pfav'){if(S.partner)S.partner.fav=clamp(S.partner.fav+v,0,5);}
+  else if(k==='pv'){if(S.evt!=null)relAdd(S.evt,v);}
   else if(k==='partner'){ if(v>0&&!S.partner){const p=npc(S.gender==='남'?'f':'m'); S.partner={name:p.name===S.rival.name?pick(S.gender==='남'?F_NAMES:M_NAMES):p.name,img:p.img,fav:2};log(S.partner.name+'와(과) 사귀기 시작');}
                           if(v<0&&S.partner){log(S.partner.name+'와(과) 이별');S.partner=null;} }
   else if(k==='flag')S.flags[v]=1;
@@ -830,7 +866,7 @@ function blocks(){ const A=S.alloc, ug=S.stage==='ug', m=minStudy(), B=[[ug?'cls
 function newLife(o){
   S={seed:(o.seed??Math.floor(Math.random()*2**31))|0,name:o.name||'김연구',gender:o.gender||'여',field:o.field||FIELDS[0],
      t:0,ss:0,stage:'ug',res:0,lec:0,eco:0,cha:0,hp:100,hpMax:100,joy:60,money:0,prog:0,papers:[],q:[],log:[],titles:[],flags:{},
-     used:[],hosp:0,army:0,armyDone:false,defer:false,home:0,life:'mid',port:'dep',mkt:null,mktH:[],inv:null,invSum:0,invIdx:100,buy:{},lingo:0,end:null,lab:null,partner:null,pend:null};
+     used:[],ap:3,hosp:0,army:0,armyDone:false,defer:false,home:0,life:'mid',port:'dep',mkt:null,mktH:[],inv:null,invSum:0,invIdx:100,buy:{},lingo:0,end:null,lab:null,partner:null,pend:null};
   S.luck=Math.round(rnd()*20-10);
   S.family=rnd()<.25?0:rnd()<.73?1:2;
   const st=o.stats||rollStats(rnd); Object.assign(S,st); S.talent=talentOf(st);
@@ -890,7 +926,8 @@ function advance(){
     // 연애: 관계 비중이 연인 호감을 지키고, 새 인연을 만든다 (예전 '연애' 칸)
     const rel=S.alloc.rel;
     // 주변 사람: 관계 비중만큼 가까워지고 새 사람을 만난다. ponytail: 결산창에 보여 주는 값. 사건·판정에 쓰려면 여기 v를 읽는다.
-    S.ppl=S.ppl||[]; for(const x of S.ppl)x.v=clamp(x.v+Math.round((F?F.pp:rel/4-4)+rnd()*6),0,100);
+    S.ppl=S.ppl||[]; for(const x of S.ppl)x.v=clamp(x.v+Math.round((F?F.pp:rel/4-4)+rnd()*6)-(x.tt===S.t?0:3),0,100); // 이번 학기 챙기지 않은 사람은 조금 더 멀어진다
+    for(const x of S.ppl.filter(x=>x.v<=5)){log(x.n+'와(과) 연락이 끊김'); msg('연락 끊김',`${x.n}와(과) 연락이 끊겼다. 마지막 대화가 언제였는지 기억나지 않는다.`);} S.ppl=S.ppl.filter(x=>x.v>5);
     if(S.ppl.length<6&&rnd()*100<(F?F.meet:20+rel*2)){const q=npc(rnd()<.5?'f':'m'); S.ppl.push({n:pick('김이박최정')+q.name,role:pick(grad()?['연구실 동료','학회 지인']:['학과 친구','동아리 선배','스터디 조원']),img:q.img,v:35+Math.round(rnd()*25)});}
     if(rel>=20){ if(S.partner)S.partner.fav=clamp(S.partner.fav+1,0,5); else if(rnd()*100<(S.cha*.6+S.luck)*rel/40)fx({partner:1}); }
     else if(S.partner&&rnd()<.25){S.partner.fav--; if(S.partner.fav<=0){fx({partner:-1,joy:-12});msg('이별','연락이 뜸해지더니 끝났다. 바빴다는 말은 하지 않기로 했다.');}}
@@ -919,18 +956,19 @@ function advance(){
   // 회복, 감소, 행복
   S.hp=clamp(S.hp+(sick?0:28+(S.home?5:0)),-50,S.hpMax);
   for(const k of STATS)if(!S.used.includes(k)&&!inArmy)S[k]=clamp(S[k]-(.2+S[k]*.006)*(S.joy<30?1.5:1),0,100); // 안 쓰는 능력치는 아주 조금씩 녹슨다
-  S.joy=clamp(S.joy+(50-S.joy)*.03+(adv?adv.joy:0)+(S.hp<25?-4:0)+-debtJoy()+(S.partner?2:0)+(!inArmy&&!sick&&S.alloc.rel+S.alloc.rest===0?-5:0),0,100);
-  S.prog=Math.min(S.prog,100);
+  S.joy=clamp(S.joy+Math.min(3,((S.ppl||[]).filter(x=>x.v>=60).length+(S.partner?1:0))*.75)+(50-S.joy)*.03+(adv?adv.joy:0)+(S.hp<25?-4:0)+-debtJoy()+(S.partner?2:0)+(!inArmy&&!sick&&S.alloc.rel+S.alloc.rest===0?-5:0),0,100);
+  if(grad()&&S.lab&&S.lab.fav>=4)S.prog+=3; // 지도교수와 가까우면 논문이 조금 더 나아간다
+  S.prog=Math.min(S.prog,100); S.ap=AP;
   // 카드 쌓기
   if(grad()&&S.prog>=100)S.q.push({k:'submit'});
   // 달별 멘트. 사건이 있으면 한 달을 차지하고, 진행 화면이 그 달에서 멈춰 카드를 띄운다.
   const MO=sem?[9,10,11,12]:[3,4,5,6], P=inArmy?{army:1}:sick?{sick:1}:S.alloc, bank=MONTH[grad()?'gr':'ug'];
   const seen=[], lines=[...Array(8)].map((_,i)=>{const keys=Object.keys(P).filter(k=>P[k]>0); let r=rnd()*keys.reduce((a,k)=>a+P[k],0), k=keys[0];
-    for(const x of keys){if((r-=P[x])<0){k=x;break;}} const all=monthPool(k), fresh=all.filter(x=>!seen.includes(x.s)), o=fresh.length?pick(fresh):{s:'같은 하루가 반복됐다. 그래도 조금은 나아졌다.',t:'0'};
+    for(const x of keys){if((r-=P[x])<0){k=x;break;}} const all=monthPool(k), fresh=all.filter(x=>!seen.includes(x.s)), o0=fresh.length?pick(fresh):{s:'같은 하루가 반복됐다. 그래도 조금은 나아졌다.',t:'0'}; let o=o0; if(PLINE[k]&&S.ppl&&S.ppl.length&&rnd()<.3){const x=pick(S.ppl); o={s:josa(pick(PLINE[k])(x.n)),t:'+'}; x.v=clamp(x.v+2,0,100);}
     seen.push(o.s); return{mo:MO[i>>1],w:i*2+2,s:o.s,t:o.t,k};}); // 16주를 2주씩 여덟 줄
   if(!inArmy&&!sick&&rnd()<.55){
-    const pool=EV.filter(e=>e.st.split(' ').includes(S.stage)&&!S.flags['e_'+e.id]&&(!e.cond||e.cond(S)));
-    if(pool.length){const e=pick(pool),i=Math.floor(rnd()*8),t=josa(e.t(S));S.flags['e_'+e.id]=1;
+    const pool=EV.filter(e=>e.st.split(' ').includes(S.stage)&&!S.flags['e_'+e.id]&&(!e.cond||e.cond(S))&&(!e.who||(e.who==='f'?S.ppl&&S.ppl.length:e.who==='p'?S.partner:e.who==='a'?S.lab:S.rival)));
+    if(pool.length){const e=pick(pool),i=Math.floor(rnd()*8); if(e.who)S.evt=pickWho(e.who); const t=josa(e.t(S));S.flags['e_'+e.id]=1;
       lines[i]={mo:lines[i].mo,w:lines[i].w,s:split1(t)[0],ev:e.id};}
   }
   if(!inArmy&&!sick){ const g=grad()?'gr':'ug', used=new Set();
@@ -949,7 +987,7 @@ function advance(){
   S.t++; if(!inArmy)S.ss++;
   for(const[n,f]of TITLES)if(f(S))title(n);
   // 학점. ponytail: 결산창에 보여 주기만 하는 값. 장학금·대학원 입시에 쓰려면 여기서 S.gpa에 쌓는다.
-  const gk=S.res*.7+S.lec*.3, gpa=S.stage==='ug'&&!inArmy&&!sick?Math.round(clamp(1.8+gk/40+(S.alloc.study>=40?.3:0)+(S.joy>60?.1:0)-(S.hp<25?.4:0)+rnd()*.4-.2,1.5,4.5)*10)/10:null;
+  const gk=S.res*.7+S.lec*.3, gpa=S.stage==='ug'&&!inArmy&&!sick?Math.round(clamp(1.8+gk/40+(S.alloc.study>=40?.3:0)+(S.joy>60?.1:0)-(S.hp<25?.4:0)+(S.gbuf||0)+rnd()*.4-.2,1.5,4.5)*10)/10:null; S.gbuf=0;
   if(gpa!=null&&gpa>=4)fx({money:SCHOLAR_GPA},'성적 장학금'); // 학점 4.0 이상이면 다음 학기 성적 장학금
   if(gpa!=null){S.gsum=(S.gsum||0)+gpa;S.gn=(S.gn||0)+1;S.gpaLast=gpa;}
   // 학기 결산창: 이번 학기 사건을 다 치른 뒤, 다음 단계 카드(진학·입대 등) 앞에 뜬다. 바뀐 값은 볼 때 계산한다.
@@ -1037,19 +1075,46 @@ const admit=o=>chance('res',GRAD[o.pres].req,S.ugTier*5-5+(S.flags.known?8:0)+gp
 function enter(o){S.lab={school:GRAD[o.pres].n,pres:o.pres,type:o.type,fav:2};S.stage='ms';S.ss=0;S.prog=0;focus(FOCUS[S.focus]?S.focus:'res');log(`${S.lab.school} 대학원 입학 (${o.type} 교수)`);}
 
 // 관계 행동: 개강 준비 화면에서 한 사람에게 학기마다 한 번. who는 S.ppl 번호 또는 'p'(연인). cost는 만 원, up은 친밀도(연인은 12당 호감 1), cha는 필요한 매력.
-const RACT={trip:{n:'여행',cost:80,up:18,cha:45,m:'와(과) 여행을 다녀왔다. 사진첩이 300장 늘었다.'},gift:{n:'선물',cost:30,up:12,m:'에게 선물을 건넸다. 포장이 선물보다 공들였다.'},cut:{n:'손절'},
-  meal:{n:'밥',cost:5,up:6,cha:15,m:'와(과) 밥을 먹었다. 계산은 내가 했다.'},confess:{n:'고백'},propose:{n:'청혼'}};
+// 관계 2026-11-15: 학기당 행동 3번. 도와주기로 호감을 쌓고, 부탁하기로 호감을 써서 이득을 얻는다. 매력이 높을수록 호감이 더 오른다.
+const TRAIT={nerd:{n:'공부벌레',like:'study',hate:'meal'},social:{n:'마당발',like:'meal',hate:'study'},soft:{n:'감성파',like:'listen',hate:'gift'},prag:{n:'실속파',like:'gift',hate:'listen'}};
+const trOf=x=>x.tr||(x.tr=Object.keys(TRAIT)[String(x.n||'가').charCodeAt(String(x.n||'가').length-1)%4]);
+const RACT={
+ call:{n:'안부 연락',g:'help',up:4,d:'호감 +4'},
+ meal:{n:'밥 사기',g:'help',cost:5,up:8,d:'5만 원'},
+ listen:{n:'고민 들어주기',g:'help',up:10,hp:-5,d:'체력 -5'},
+ study:{n:'함께 공부',g:'help',up:5,fx:{res:1.5},d:'연구력 +1.5'},
+ gift:{n:'선물',g:'help',cost:30,up:15,d:'30만 원'},
+ notes:{n:'족보 부탁',g:'ask',need:40,use:10,d:'이번 학기 학점 +0.3',ok:()=>S.stage==='ug',go(){S.gbuf=.3;}},
+ job:{n:'일자리 소개',g:'ask',need:50,use:15,d:'150만 원, 영업력 +1',go(){fx({money:150,eco:1},'소개받은 일');}},
+ coauth:{n:'공동 연구',g:'ask',need:50,use:15,d:'논문 진척 +10',ok:()=>grad(),go(){fx({prog:10});}},
+ advice:{n:'연구 상담',g:'ask',need:40,use:10,d:'논문 진척 +8 (학부는 연구력 +2)',go(){grad()?fx({prog:8}):fx({res:2});}},
+ rally:{n:'선전포고',g:'ask',need:0,use:10,d:'연구력 +2, 강의력 +1',go(){fx({res:2,lec:1});}},
+ confess:{n:'고백',g:'love'},propose:{n:'청혼',g:'love'},cut:{n:'손절',g:'love'}};
+const RROLE={f:['call','meal','listen','study','gift','notes','job','coauth','confess','cut'],p:['call','meal','listen','gift','propose','cut'],r:['call','meal','study','rally'],a:['call','gift','advice']};
+const AP=3;
+// 한 사람의 호감 0~100. 친구는 v, 연인·라이벌·교수는 0~5(소수 허용)를 20배로 본다.
+const relOf=w=>w==='p'?S.partner:w==='r'?S.rival:w==='a'?S.lab:(S.ppl||[])[w];
+const relV=w=>{const x=relOf(w);return !x?0:typeof w==='number'?x.v:x.fav*20;};
+function relAdd(w,d){const x=relOf(w); if(!x)return; if(typeof w==='number')x.v=clamp(x.v+d,0,100); else x.fav=clamp(x.fav+d/20,0,5);}
 const relP=v=>clamp(Math.round((v+S.cha)*.6-15),5,95); // 고백·청혼: 친밀도와 매력이 높을수록 받아 준다
-function relCan(x,isP,a){const A=RACT[a]; if(!x||x.t===S.t||A.cost&&S.money<A.cost||A.cha&&S.cha<A.cha)return false;
-  return a==='confess'?!isP:a==='propose'?isP&&!x.wed:true;}
-function relAct(who,a){const isP=who==='p', x=isP?S.partner:(S.ppl||[])[who]; if(!relCan(x,isP,a))return; const A=RACT[a], nm=isP?x.name:x.n; x.t=S.t;
-  if(A.up){fx({money:-A.cost},'관계'); if(isP)x.fav=clamp(x.fav+Math.round(A.up/12),0,5); else x.v=clamp(x.v+A.up,0,100); S.joy=clamp(S.joy+2,0,100); msg(A.n,nm+A.m);}
-  else if(a==='cut'){ if(isP){fx({partner:-1,joy:-10});msg('손절',`${nm}에게 그만 만나자고 했다.`);} else{S.ppl.splice(who,1);msg('손절',`${nm}의 연락처를 지웠다. 단톡방에서도 조용히 나왔다.`);} }
-  else if(a==='confess'){ if(roll(relP(x.v))){const ex=S.partner&&S.partner.name; if(ex){log(ex+'와(과) 이별');S.joy=clamp(S.joy-5,0,100);} S.ppl.splice(who,1);S.partner={name:nm,fav:clamp(Math.round(x.v/20),2,5),img:x.img,role:x.role,t:S.t};log(nm+'와(과) 사귀기 시작');S.joy=clamp(S.joy+10,0,100);msg('고백',`"나도 사실..." ${nm}와(과) 사귀기로 했다.`+(ex?` ${ex}에게는 문자로 이별을 알렸다.`:''));}
+const relGain=(w,a)=>{const A=RACT[a], x=relOf(w), tr=typeof w==='number'?TRAIT[trOf(x)]:null; return Math.round(A.up*(.6+S.cha/100)*(tr?tr.like===a?1.5:tr.hate===a?.5:1:1));};
+function relCan(w,a){const A=RACT[a], x=relOf(w), role=typeof w==='number'?'f':w; if(!x||!RROLE[role].includes(a)||(S.ap??AP)<=0)return false;
+  if(A.cost&&S.money<A.cost||A.ok&&!A.ok())return false; if(A.g==='ask'&&relV(w)<A.need)return false;
+  return a==='propose'?!x.wed:true;}
+function relAct(w,a){ if(!relCan(w,a))return; const A=RACT[a], x=relOf(w), nm=w==='a'?x.type+' 교수':x.name||x.n; S.ap=(S.ap??AP)-1; x.tt=S.t;
+  if(A.g==='help'){ if(A.cost)fx({money:-A.cost},'관계'); if(A.hp)fx({hp:A.hp}); if(A.fx)fx(A.fx); const g=relGain(w,a); relAdd(w,g); S.joy=clamp(S.joy+1,0,100); msg(A.n,`${nm}와(과) ${A.n}. 호감 +${g}`);}
+  else if(A.g==='ask'){ relAdd(w,-A.use); A.go(); msg(A.n,`${nm}에게 ${A.n}. ${A.d}. 호감 -${A.use}`);}
+  else if(a==='cut'){ if(w==='p'){fx({partner:-1,joy:-10});msg('손절',`${nm}에게 그만 만나자고 했다.`);} else{S.ppl.splice(w,1);msg('손절',`${nm}의 연락처를 지웠다. 단톡방에서도 조용히 나왔다.`);} }
+  else if(a==='confess'){ if(roll(relP(x.v))){const ex=S.partner&&S.partner.name; if(ex){log(ex+'와(과) 이별');S.joy=clamp(S.joy-5,0,100);} S.ppl.splice(w,1);S.partner={name:nm,fav:clamp(Math.round(x.v/20),2,5),img:x.img,role:x.role,tt:S.t};log(nm+'와(과) 사귀기 시작');S.joy=clamp(S.joy+10,0,100);msg('고백',`"나도 사실..." ${nm}와(과) 사귀기로 했다.`+(ex?` ${ex}에게는 미안하다는 말밖에 할 수 없었다.`:''));}
     else{x.v=clamp(x.v-10,0,100);S.joy=clamp(S.joy-6,0,100);msg('고백',`"좋은 친구로 지내자." ${nm}의 답장은 짧았다.`);} }
   else if(a==='propose'){ if(roll(relP(x.fav*20)-10)){x.wed=1;log(nm+'와(과) 약혼');S.joy=clamp(S.joy+15,0,100);msg('청혼',`반지를 받은 ${nm}이(가) 울었다. 나도 울었다.`);}
     else{x.fav=clamp(x.fav-1,0,5);S.joy=clamp(S.joy-8,0,100);msg('청혼','"아직은 아닌 것 같아." 반지는 서랍에 넣었다.');} }
 }
+// 사람이 나오는 사건: 사건을 고를 때 대상(S.evt)을 정하고, 선택지 효과의 pv는 그 사람 호감에 더한다.
+const pickWho=k=>k==='f'?Math.floor(rnd()*S.ppl.length):k;
+const evN=()=>{const w=S.evt;return w==null?'친구':w==='p'?S.partner&&S.partner.name:w==='r'?S.rival.name:w==='a'?S.lab&&S.lab.type+' 교수':(S.ppl[w]||{}).n||'친구';};
+const PLINE={study:[n=>`${n}와(과) 도서관에서 밤을 새웠다.`,n=>`${n}이(가) 정리한 노트를 빌려 봤다. 깔끔했다.`],lec:[n=>`${n}에게 전공 개념을 설명해 줬다. 나도 더 잘 알게 됐다.`],
+  eco:[n=>`${n}이(가) 괜찮은 단기 알바를 알려 줬다.`],rel:[n=>`${n}와(과) 한강에서 치킨을 먹었다.`,n=>`${n}와(과) 새벽까지 이야기를 나눴다.`],rest:[n=>`${n}와(과) 하루 종일 게임을 했다.`,n=>`${n}와(과) 동네 산책을 했다.`]};
 function resolve(i){LT=Math.max(0,S.t-1); try{resolve_(i);}finally{LT=null;}}
 function resolve_(i){
   const c=S.q.shift(); if(!c)return;
@@ -1135,7 +1200,7 @@ if(typeof document!=='undefined'){
   const stageName=()=>S.army>0?'군 복무 중':stg();
   const role=()=>S.army>0?'군 복무 중':S.stage==='ug'?(S.alloc.study>=50&&S.ss>=4?'학부 연구생':'학부생'):S.stage==='ms'?'석사과정':'박사과정';
   const HOUSE='<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M7 1h2v1h1v1h1v1h1v1h1v1h1v1h1v2h-2v6H9v-4H7v4H3V9H1V7h1V6h1V5h1V4h1V3h1V2h1z"/></svg>';
-  const hearts=n=>'호감 '+n+' / 5';
+  const hearts=n=>'호감 '+Math.round(n*20)+' / 100';
   const dhtml=(d,sep=', ')=>Object.entries(d).filter(([,v])=>Math.abs(v)>=.1).map(([k,v])=>`<span class="${v>0?'up':'down'}">${DN[k]} ${v>0?'+':''}${Math.round(v*10)/10}</span>`).join(sep);
   function home(){const d=store.get('nobel.dogam')||{titles:[],endings:[]};
     if(ui.screen==='people')return `<div class="scroll"><h2>인물</h2>${!S?'<p class="muted">진행 중인 인생이 없습니다.</p>':`<ul class="list panel">
@@ -1256,7 +1321,7 @@ if(typeof document!=='undefined'){
     const items=(o,def)=>Object.entries(o||{}).sort((x,y)=>y[1]-x[1]).map(([n,v])=>`<div class="it">${ic(ICO[n]||def)}<span>${n}</span><b class="num">${won(v)}</b></div>`).join('');
     const bal=(icon,n,a,z)=>`<div class="bal">${ic(icon)}<b>${n}</b><span class="muted num">${won(a)} →</span><span class="chip pill num">${won(z)}</span></div>`;
     // 관계: [그림, 이름, 사이, 한 줄, 지금 친밀도, 이전 친밀도, 새 인연]. 교수·라이벌·연인의 호감 0~5는 20을 곱해 같은 눈금으로 보인다.
-    const f0=b.f||{}, p0=b.p||{}, x20=v=>v==null?null:v*20, NOTE={'연구실 동료':'함께 첫 공동 연구','학회 지인':'학회에서 명함을 나눴다','학과 친구':'공모전 준비를 함께했다','동아리 선배':'밥을 자주 사 준다','스터디 조원':'시험 기간을 함께 버텼다'};
+    const f0=b.f||{}, p0=b.p||{}, x20=v=>v==null?null:Math.round(v*20), NOTE={'연구실 동료':'함께 첫 공동 연구','학회 지인':'학회에서 명함을 나눴다','학과 친구':'공모전 준비를 함께했다','동아리 선배':'밥을 자주 사 준다','스터디 조원':'시험 기간을 함께 버텼다'};
     const dv=p=>p[5]==null?0:p[4]-p[5];
     const ppl=[...(S.ppl||[]).map(x=>[x.img,x.n,x.role,x.n in p0?(x.v>=p0[x.n]?'여전히 가깝게 지낸다':'조금 소원해졌다'):NOTE[x.role],x.v,p0[x.n],!(x.n in p0)]),
       S.lab&&['교수',S.lab.type+' 교수','지도 교수','연구 상담을 받았다',x20(S.lab.fav),x20(f0.lab)],
@@ -1313,13 +1378,16 @@ if(typeof document!=='undefined'){
       gift:px('..kk....kk.. .kyyk..kyyk. ..kyykkyyk.. kkkkkkkkkkkk krrrryyrrrrk krrrryyrrrrk kkkkkkkkkkkk .krrryyrrrk. .krrryyrrrk. .krrryyrrrk. .krrryyrrrk. .kkkkkkkkkk.'),
       cut:px('.........r.. .kkk....r..r kgggk....... kg.gk...r... kg..gk...... .kg.gk...... ..kggk...... ......kggk.. ......kg.gk. ......kg..gk .......kg.gk ........kkk.'),
       propose:px('....kkkk.... ...kbwwbk... ....kbbk.... ....kyyk.... ..kkyyyykk.. .kyyk..kyyk. kyyk....kyyk kyk......kyk kyyk....kyyk .kyyk..kyyk. ..kkyyyykk.. ....kkkk....')};
-    const rl=[...(S.ppl||[]).map((x,i)=>({w:i,x,p:0,n:x.n,v:x.v})),S.partner&&{w:'p',x:S.partner,p:1,n:S.partner.name,v:S.partner.fav*20}].filter(Boolean), rt=ui.rtab||'all';
-    const rkind=r=>r.p?(r.x.wed?'약혼자':'연인'):r.v>=70?'절친':r.v>=40?'친구':'지인', rage=r=>age()+r.n.charCodeAt(r.n.length-1)%3-1+(r.x.role==='동아리 선배'?1:0); // 나이는 이름에서 정해지는 표시용
-    const relUI=`<div class="rtabs" role="tablist">${[['all','전체 '+rl.length],['f','친구'],['p','연인']].map(([k,n])=>`<button role="tab" aria-selected="${rt===k}" class="${rt===k?'on':''}" data-a="rtab" data-v="${k}">${n}</button>`).join('')}</div>
-      <p class="hint">학기마다 한 사람에게 한 번 · 밥 5만 · 선물 30만 · 여행 80만 원<br><small>밥은 매력 15, 여행은 매력 45 이상</small></p>
-      ${rl.filter(r=>rt==='all'||(rt==='p')===!!r.p).map(r=>`<div class="rp${r.x.t===S.t?' done':''}"><div class="rpi">${ic(r.x.img||'연인','인물-')}<div><b>${esc(r.n)}</b><small>${rage(r)}세 · ${rkind(r)}</small><small>호감도 <span class="num">${r.v}</span></small></div>
-        <div class="hb">${ic('매력')}<div class="meter" style="--bar:var(--gold)"><i style="width:${r.v}%"></i></div></div></div>
-        <div class="rag">${Object.keys(RACT).map(a=>`<button class="ra" data-a="rel" data-v="${a}" data-w="${r.w}"${relCan(r.x,r.p,a)?'':' disabled'}>${RI[a]}<span>${RACT[a].n}</span></button>`).join('')}</div></div>`).join('')||'<p class="muted">아직 가까운 사람이 없습니다.</p>'}`;
+    const RK={f:'친구',p:'연인',r:'라이벌',a:'지도 교수'};
+    const rl=[S.partner&&{w:'p',k:'p',x:S.partner,n:S.partner.name,img:S.partner.img||'연인'},S.lab&&{w:'a',k:'a',x:S.lab,n:S.lab.type+' 교수',img:'교수'},
+      {w:'r',k:'r',x:S.rival,n:S.rival.name,img:S.rival.img||'라이벌'},...(S.ppl||[]).map((x,i)=>({w:i,k:'f',x,n:x.n,img:x.img||'인물'}))].filter(Boolean).map(r=>({...r,v:Math.round(relV(r.w))})), rt=ui.rtab||'all';
+    const rsub=r=>r.k==='f'?`${esc(r.x.role)} · ${TRAIT[trOf(r.x)].n} (${RACT[TRAIT[trOf(r.x)].like].n} 좋아함)`:r.k==='p'?(r.x.wed?'약혼자':'연인'):RK[r.k];
+    const rtag=a=>{const A=RACT[a];return A.g==='ask'?(A.need?`호감 ${A.need}↑ 필요, -${A.use}`:`호감 -${A.use}`):A.g==='help'?A.d:'';};
+    const relUI=`<div class="rtabs" role="tablist">${[['all','전체 '+rl.length],['f','친구'],['p','연인'],['s','학교']].map(([k,n])=>`<button role="tab" aria-selected="${rt===k}" class="${rt===k?'on':''}" data-a="rtab" data-v="${k}">${n}</button>`).join('')}</div>
+      <p class="rap"><span>남은 행동 <b class="num">${S.ap??AP} / ${AP}</b></span><small>도와주기로 호감을 쌓고, 부탁하기로 호감을 써서 이득을 얻는다. 매력이 높을수록 호감이 더 오른다.</small></p>
+      ${rl.filter(r=>rt==='all'||rt==='f'&&r.k==='f'||rt==='p'&&r.k==='p'||rt==='s'&&(r.k==='a'||r.k==='r')).map(r=>`<div class="rp2">
+        <div class="rph"><img class="face" src="에셋/인물-${r.img}.webp" alt=""><div class="rpn"><b>${esc(r.n)}</b><small>${rsub(r)}</small></div><div class="rpv"><b class="num">${r.v}</b><div class="meter"><i style="width:${r.v}%"></i></div></div></div>
+        <div class="rpa">${RROLE[r.k].map(a=>`<button class="rc ${RACT[a].g}" data-a="rel" data-v="${a}" data-w="${r.w}"${relCan(r.w,a)?'':' disabled'}><b>${RACT[a].n}${r.k==='f'&&RACT[a].g==='help'&&TRAIT[trOf(r.x)].like===a?' ♥':''}</b>${rtag(a)?`<small>${rtag(a)}</small>`:''}</button>`).join('')}</div></div>`).join('')||'<p class="muted">아직 가까운 사람이 없습니다.</p>'}`;
     const gp=S.gn?(S.gsum/S.gn).toFixed(2):'-';
     const recUI=`<ul class="fxl">${recs.map(([k,v])=>`<li><span>${k}</span><b>${esc(v)}</b></li>`).join('')}</ul><h4 class="fxh">함께하는 사람들</h4><ul class="fxl">${ppl.map(p=>`<li><span>${esc(p[1])} <small class="muted">${p[2]}</small></span><b class="num">${p[3]}</b></li>`).join('')}</ul>`;
     const focUI=S.army>0?`<p class="muted fxn">복무 중에는 초점을 고를 수 없다. 남은 기간 ${S.army}학기.</p>`
@@ -1330,7 +1398,7 @@ if(typeof document!=='undefined'){
       ${scene(`${age()}세 · ${stg()} ${S.t%2+1}학기`,'개강 준비',[['순자산',won(asset(S))],['통장',won(S.money),S.money<0?'down':''],['월 소득',won((S.inc0||0)/6)],['누적 평점',gp]],S.lastSettle&&S.lastSettle.top)}
       ${strip(k=>S[k])}
       <section class="card focus"><header><h2>이번 학기 초점</h2><em>${ug?(UGF[S.focus]||{n:'선택 안 함'}).n:FOCUS[S.focus]?SL(S.focus):'선택 안 함'}</em></header>${focUI}</section>
-      ${FD('선택','이번 학기 선택',`<div class="subf">${FD('투자','투자',invUI,won(S.money))}${FD('관계','관계',relUI,ppl.length+'명')}${FD('학업','학업',actUI,S.act&&ACTS[S.act]?ACTS[S.act].n:'선택 안 함')}</div>`,'투자, 관계, 학업')}${FD('기록','기록',recUI,'')}
+      ${FD('선택','이번 학기 선택',`<div class="subf">${FD('투자','투자',invUI,won(S.money))}${FD('관계','관계',relUI,`${ppl.length}명, 행동 ${S.ap??AP}/${AP}`)}${FD('학업','학업',actUI,S.act&&ACTS[S.act]?ACTS[S.act].n:'선택 안 함')}</div>`,'투자, 관계, 학업')}${FD('기록','기록',recUI,'')}
       <section class="endbox"><button class="btn big" data-a="next">다음 →</button><div class="row"><button class="lnk" data-a="retire">은퇴</button><button class="lnk" data-a="go" data-v="create">다시 태어나기</button><button class="lnk" data-a="theme">${document.documentElement.dataset.theme==='dark'?'라이트 모드':'다크 모드'}</button></div></section></div>`;
   }
   // 학기 진행 화면: 한 학기 16주를 2주씩 넘긴다(멘트 한 줄 = 2주). 수치는 학기 시작 때 값이고, 달라진 값은 결산에서 보여 준다.
@@ -1432,7 +1500,7 @@ if(typeof document!=='undefined'){
     else if(a==='rtab')ui.rtab=v;
     else if(a==='theme'){const th=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=th;store.set('nobel.theme',th);}
     else if(a==='review'){ui.review=!ui.review;const sc=app.querySelector('.scroll');if(sc)sc.scrollTop=0;}
-    else if(a==='rel'){const w=b.dataset.w==='p'?'p':+b.dataset.w; if(v!=='cut'||confirm('정말 손절할까요? 되돌릴 수 없습니다.')){relAct(w,v);save();}}
+    else if(a==='rel'){const w=['p','r','a'].includes(b.dataset.w)?b.dataset.w:+b.dataset.w; if(v!=='cut'||confirm('정말 손절할까요? 되돌릴 수 없습니다.')){relAct(w,v);save();}}
     else if(a==='retire')ui.sheet='retire';
     else if(a==='retireYes'){ui.sheet=null;finish('exit');}
     else if(a==='close')ui.sheet=null;
