@@ -35,7 +35,7 @@ dialog.closes = 0;
 dialog.showModal = () => { dialog.open = true; dialog.opens++; };
 dialog.close = () => { dialog.open = false; dialog.closes++; };
 const local = new Map();
-const context = vm.createContext({ document, window: { matchMedia: () => ({matches: true}) },
+const context = vm.createContext({ NobelScenarioData:require('./scenario-data.js'), NobelScenarioEngine:require('./scenario-engine.js'), document, window: { matchMedia: () => ({matches: true}) },
   localStorage: { getItem: key => local.get(key) || null, setItem: (key, value) => local.set(key, value) },
   setTimeout: () => 1, setInterval: () => 1, clearTimeout() {}, clearInterval() {}, console });
 vm.runInContext(source.replace("  S=store.get('nobel.life');", "  globalThis.UI={ui,render,onAction}; S=store.get('nobel.life');"), context);
@@ -94,4 +94,13 @@ run("UI.ui.sheet='retire'; UI.render();");
 action('retireYes', 1);
 assert.equal(run('!!S.end'), true, 'explicit retirement action still works');
 assert.equal(dialog.open, false);
+run("newLife({seed:9,gender:'여'}); S.q=[]; Narrative.beginTurn(); const csvCard=Narrative.activate('UG001_V01',{turn:0,w:2}); S.q=[csvCard]; UI.ui.screen='game'; UI.render();");
+assert.equal(dialog.open,true);
+assert.match(dialog.innerHTML,/수강 신청의 마지막 한 자리/);
+assert.match(dialog.innerHTML,/decision-tradeoff/);
+assert.match(dialog.innerHTML,/남은 재량 시간/);
+action('res',0);
+assert.match(dialog.innerHTML,/필수 과목을 우선하는 시간표로 선택/);
+action('res',0);
+assert.equal(dialog.open,false);
 console.log('Modal event/result chains, locked choices, focus, Escape, retirement and escaping: passed (DOM harness; no browser rendering).');

@@ -1,0 +1,82 @@
+// node test-scenarios.js — CSV references, real engine integration and saved history semantics.
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const data=require('./scenario-data.js');
+eval(fs.readFileSync(__dirname+'/nobel.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]);
+const game=globalThis.G,engine=game.Narrative;
+assert.equal(data.situations.length,500);assert.equal(data.variants.length,5000);
+assert.equal(data.variants.reduce((n,v)=>n+v.choices.length,0),15000);assert.equal(data.followups.length,50);
+assert.equal(new Set(data.arcs.map(x=>x.id)).size,12);
+const followIds=new Set(data.followups.map(f=>f.id));
+for(const v of data.variants){
+  assert.equal(v.choices.length,3);assert.ok(v.body);assert.ok(data.pool[v.condition]);
+  for(const c of v.choices){
+    assert.ok(['certain','weighted_v2'].includes(data.pool[c.judge].type));
+    assert.ok(c.time>=0&&c.time<=4&&c.support>=0&&c.support<=3);
+    const spec=data.pool[c.follow];
+    for(const r of [spec.onSuccess,spec.onFailure,...(spec.conditionalReservations||[])])if(r)assert.ok(followIds.has(r.candidate),r.candidate);
+  }
+}
+const scope={chain:'C01',entity:'course-1'};
+const history=[0,1,2].map(turn=>({turn,scope:{...scope},tags:['practice_completed']}));
+const env={age:20,context:{entityId:'course-1'},currentTurn:2,history};
+const condition={history:{tag:'practice_completed',min:3,distinctTurns:true,scope:{chain:'C01',entity:'$context.entityId'}}};
+assert.equal(engine.test({all:[]},env),true);assert.equal(engine.test({any:[]},env),false);
+assert.equal(engine.test({eq:['unknown',false]},env),false);
+assert.equal(engine.test(condition,env),true);
+assert.equal(engine.test(condition,{...env,context:{entityId:'course-2'}}),false);
+assert.equal(engine.test(condition,{...env,currentTurn:1}),false);
+assert.equal(engine.test(condition,{...env,history:history.map(h=>({...h,turn:1}))}),false);
+const sequential={sequence:{tags:['attempt_failed','help_received','verification_completed'],minGap:1,scope:{entity:'$context.entityId'}}};
+const seqHistory=['attempt_failed','help_received','verification_completed'].map((tag,turn)=>({turn,scope,tags:[tag]}));
+assert.equal(engine.test(sequential,{...env,history:seqHistory}),true);
+assert.equal(engine.test(sequential,{...env,history:seqHistory.map(h=>({...h,turn:0}))}),false);
+function fresh(){game.newLife({seed:7,gender:'여'});game.S.q=[];game.S.money=2000;engine.beginTurn();return game.S;}
+let S=fresh();
+const card=engine.activate('UG001_V01',{turn:0,w:2,mo:3});
+assert.ok(card);S.q=[card];const display=game.view();assert.match(display.heading,/수강 신청/);assert.doesNotMatch(display.body,/\{age\}|\{school\}/);
+const chosen=data.variants.find(v=>v.id===card.id).choices[1],timeBefore=S.scenario.calendar.free,moneyBefore=S.money;
+game.resolve(1);
+assert.equal(S.scenario.calendar.free,timeBefore-chosen.time);
+assert.equal(S.money,moneyBefore+(data.pool[chosen.cost].money||0)+(data.pool[chosen.okFx].money||0));
+assert.ok(S.scenario.history[0].tags.includes('help_requested'));
+assert.ok(!S.scenario.history[0].tags.includes('help_given'));
+assert.equal(S.scenario.history[0].scope.entity,card.entityId);
+assert.equal(engine.activate('UG001_V02',{turn:1}),null,'a different variant cannot repeat a used situation');
+const after=JSON.stringify(S);S.q=[card];assert.equal(engine.resolve(1),false);
+assert.equal(S.scenario.calendar.free,timeBefore-chosen.time);
+S.q=[];S.t=2;engine.beginTurn();const invitation=engine.draw({turn:2,w:2});
+assert.equal(invitation.k,'scenarioInvite');S.q=[invitation];game.resolve(0);assert.equal(S.q[0].k,'followup');
+const token=S.scenario.tokens[0];assert.equal(token.eventConfirmed,true);
+game.resolve(2);assert.equal(token.active,false);assert.equal(token.applied,true);
+assert.equal(S.papers.length,0,'a follow-up does not invent a paper or official award');
+S=fresh();S.money=-500;assert.ok(engine.activate('UG001_V01',{turn:0}),'free choices remain possible with a negative bank balance');
+S=fresh();S.hp=26;S.res=50;S.lec=50;const weighted=engine.activate('UG002_V01',{turn:0});assert.ok(weighted);
+const snapshot=JSON.parse(JSON.stringify(weighted));S.q=[weighted];const frozen=game.view().ch.map(c=>c.tag);
+const save=JSON.parse(JSON.stringify(S));Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,save);
+assert.deepEqual(game.view().ch.map(c=>c.tag),frozen,'reload keeps public probabilities');
+assert.deepEqual(S.q[0].rolls,snapshot.rolls,'reload keeps hidden random draws');
+const fake={id:'test-case',followup:'F_C01_R',chain:'C01',entityId:weighted.entityId,kind:'repair',active:true,applied:false,eventConfirmed:true,mandatory:true,remaining:2,step:0,created:0,due:0,
+  origin:{situation:'UG001',title:'수강 신청의 마지막 한 자리'}};
+S=fresh();fake.entityId=engine.environment(data.situations[0],{turn:0}).context.entityId;
+S.scenario.tokens=[fake];let repair=engine.draw({turn:0});assert.equal(repair.k,'followup');S.q=[repair];game.resolve(1);
+assert.equal(fake.remaining,1);assert.equal(fake.active,true);assert.equal(fake.step,1);assert.equal(fake.due,1);
+S.q=[];S.t=1;engine.beginTurn();repair=engine.draw({turn:1});assert.equal(repair.k,'followup');S.q=[repair];game.resolve(1);
+assert.equal(fake.remaining,0);assert.equal(fake.active,false);
+assert.equal(S.scenario.history.filter(h=>h.tags.includes('repair_completed')).length,1);
+assert.equal(fake.deadline,0,'rescheduling a repair display does not extend its actual deadline');
+S=fresh();S.t=3;S.hp=20;engine.beginTurn();
+S.scenario.history=[0,1,2].map(turn=>({turn,scope:{},tags:['overcommit']}));
+const fatigue=engine.draw({turn:3});assert.match(fatigue.id,/_V08$/,'critical fatigue precedes the ordinary lottery');
+S=fresh();S.lang={score:800,t:0};S.t=3;
+assert.deepEqual(engine.environment(data.situations[0],{turn:3}).langStatus,{present:true,remainingTurns:1});
+S=fresh();S.t=3;S.hp=20;S.res=50;engine.beginTurn();
+S.scenario.history=[0,1,2].map(turn=>({turn,scope:{},tags:['overcommit']}));
+S.pend=[{k:'study',s:'추가 실습',d:{res:2}}];
+const recovery=data.variants.find(v=>v.situation.startsWith('UG')&&v.variant==='V08'&&v.choices.some(c=>data.pool[c.okState].set?.cancelOneOptionalTask));
+assert.ok(recovery);const recoveryCard=engine.activate(recovery.id,{turn:3});assert.ok(recoveryCard);
+S.q=[recoveryCard];const recoveryIndex=recovery.choices.findIndex(c=>data.pool[c.okState].set?.cancelOneOptionalTask);
+game.resolve(recoveryIndex);assert.equal(S.pend[0].cancelled,true);assert.ok(S.res<50,'rest does not preserve the cancelled task\'s unearned growth');
+S=fresh();S.scenario.facts.activity={kind:'contest',turn:0,current:true,awarded:true,prizePaid:true,accepted:true};S.t=1;S.act='contest';engine.beginTurn();
+assert.equal(engine.environment(data.situations[0],{turn:1}).activity.awarded,false,'past awards do not leak into a new activity round');
+console.log('500 situations / 5,000 variants / 15,000 choices / 50 follow-ups / 12 arcs: references passed.');
+console.log('Eligibility, scoped history, chronology, costs, one-shot cases, saved randomness, invitations and partial repairs: passed.');
