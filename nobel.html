@@ -175,6 +175,14 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .it b{margin-left:auto;color:var(--muted)}
 .bal{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 10px;padding:8px 10px;background:#fdecc4}
 .bal .ico{width:36px}
+.inv{margin-top:10px;padding:10px;border:2px solid #ead9c4;background:#fffaf0}
+.invh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.invh .ico{width:32px}.invh b{font-size:17px}
+.invh .tag{background:var(--accent);color:var(--accent-ink);padding:1px 6px;font-size:13px}
+.invr{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-end;gap:4px 10px;padding:6px 0}.invr b{font-size:20px;color:var(--accent)}.invr em{font-style:normal;font-weight:700}
+.invs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.invs>div{display:flex;flex-direction:column;padding:6px 8px;background:#f6ecd8}.invs span{font-size:13px;color:var(--muted)}.invs b{font-size:17px}
+.spark{position:relative;height:84px;display:flex;gap:6px;margin-top:8px;background:linear-gradient(#cdb796,#cdb796) center/100% 1px no-repeat}
+.spark span{flex:1;position:relative}.spark i{position:absolute;left:12%;right:12%}.spark i.up{background:var(--good)}.spark i.dn{background:var(--bad)}.spark i.cur{padding:0;gap:0;box-shadow:0 0 0 2px var(--accent)}
+.cmp{display:flex;flex-wrap:wrap;gap:4px 12px;margin:8px 0 0;font-size:14px;color:var(--muted)}.cmp .me{color:var(--ink,#3a2420);font-weight:700;text-decoration:underline}
 .bal>b{flex:1;font-size:18px;color:var(--accent);white-space:nowrap}
 .per{grid-template-columns:64px 1fr auto}
 .fav{display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -678,7 +686,7 @@ function blocks(){ const A=S.alloc, ug=S.stage==='ug', m=minStudy(), B=[[ug?'cls
 function newLife(o){
   S={seed:(o.seed??Math.floor(Math.random()*2**31))|0,name:o.name||'김연구',gender:o.gender||'여',field:o.field||FIELDS[0],
      t:0,ss:0,stage:'ug',res:0,lec:0,eco:0,cha:0,hp:100,hpMax:100,joy:60,money:0,prog:0,papers:[],q:[],log:[],titles:[],flags:{},
-     used:[],hosp:0,army:0,armyDone:false,defer:false,home:0,life:'mid',port:'dep',buy:{},lingo:0,end:null,lab:null,partner:null,pend:null};
+     used:[],hosp:0,army:0,armyDone:false,defer:false,home:0,life:'mid',port:'dep',mkt:null,mktH:[],inv:null,invSum:0,invIdx:100,buy:{},lingo:0,end:null,lab:null,partner:null,pend:null};
   S.luck=Math.round(rnd()*20-10);
   S.family=rnd()<.25?0:rnd()<.73?1:2;
   const st=o.stats||rollStats(rnd); Object.assign(S,st); S.talent=talentOf(st);
@@ -748,7 +756,11 @@ function advance(){
     else{fx({money:Math.round((S.stage==='ms'?600:960)*adv.pay+(S.lab.pres===3?120:0))},'인건비');fx({money:-760+RENT},'생활비');}
     if(!S.home)fx({money:-RENT},'월세');
     const L=LIFE[S.life||'mid']; if(L.cost)fx({money:-L.cost},L.cost>0?'플렉스':'가성비 절약'); S.joy=clamp(S.joy+L.joy,0,100); }
-  if(S.money>0){let g=S.money*yieldPct(S.port||'dep')/100; if(g>0)g*=.6+S.eco/125; g=Math.round(g); if(g)fx({money:g},'투자');}
+  // 투자: 세 상품의 이번 학기 시장 수익률을 모두 뽑고(결산창에서 비교해 보여 준다), 고른 상품만 내 돈에 반영한다.
+  S.mkt=Object.fromEntries(Object.keys(PORT).map(k=>[k,+yieldPct(k).toFixed(1)])); (S.mktH||=[]).push(S.mkt); if(S.mktH.length>12)S.mktH.shift();
+  { const k=S.port||'dep', base=S.money; let pct=0,g=0;
+    if(base>0){ pct=S.mkt[k]; if(pct>0&&k!=='dep')pct*=.6+S.eco/125; g=Math.round(base*pct/100); if(g)fx({money:g},'투자'); }
+    S.inv={k,base,g,pct:base>0?+pct.toFixed(1):null}; if(base>0){S.invSum=(S.invSum||0)+g; S.invIdx=(S.invIdx||100)*(1+pct/100);} }
   // 회복, 감소, 행복
   S.hp=clamp(S.hp+(sick?0:28+(S.home?5:0)),-50,S.hpMax);
   for(const k of STATS)if(!S.used.includes(k)&&!inArmy)S[k]=clamp(S[k]-(.2+S[k]*.006)*(S.joy<30?1.5:1),0,100); // 안 쓰는 능력치는 아주 조금씩 녹슨다
@@ -922,9 +934,12 @@ const BUY={
  tutor:{n:'과외 받기',ico:'강의',price:200,d:'연구력 +5',can:()=>!S.army,go(){fx({res:5});}},
  abroad:{n:'어학 연수',ico:'영어',price:500,d:'어학 능력 +15 · 어학 시험 점수가 잘 나온다',can:()=>!S.army,go(){S.lingo=Math.min((S.lingo||0)+15,60);log('어학 연수를 다녀왔다');}}};
 const LIFE={flex:{n:'플렉스',ico:'행복',cost:250,joy:6,d:'학기 생활비 +250만 원 · 행복↑'},mid:{n:'보통',ico:'식사',cost:0,joy:0,d:'학기 생활비 그대로'},cheap:{n:'가성비',ico:'영수증',cost:-150,joy:-6,d:'학기 생활비 -150만 원 · 행복↓'}};
-const PORT={dep:{n:'예금',ico:'통장',mu:3,sd:0,d:'연 3% 고정'},stock:{n:'주식',ico:'재정',mu:7,sd:20,d:'연 평균 7% · 오르내림이 있다'},coin:{n:'코인',ico:'코인',mu:10,sd:80,d:'연 평균 10% · 반토막도, 두 배도 난다'}};
+const PORT={dep:{n:'예금',ico:'통장',mu:1.5,sd:0,d:'학기 1.5% (연 3%) 고정 · 원금 보장'},stock:{n:'주식',ico:'재정',mu:4.5,sd:22,d:'학기 평균 +4.5% · 한 학기에 ±20%쯤 오르내린다'},coin:{n:'코인',ico:'코인',mu:8,sd:40,jump:.1,d:'학기 평균 +8% · 반토막도, 두 배도 난다'}};
 const gauss=()=>Math.sqrt(-2*Math.log(1-rnd()))*Math.cos(2*Math.PI*rnd());
-const yieldPct=k=>{const P=PORT[k];return Math.max(P.mu/2+P.sd/Math.SQRT2*gauss(),-80);}; // 학기 수익률 %, 한 학기에 80% 넘게 잃지는 않는다
+// 학기 수익률 %. 코인은 10%씩 폭락(-55% 안팎)·폭등(+120% 안팎) 학기가 있다. 한 학기에 90% 넘게 잃지는 않는다.
+const yieldPct=k=>{const P=PORT[k],u=rnd(); if(P.jump&&u<P.jump)return Math.max(-55+10*gauss(),-90); if(P.jump&&u>1-P.jump)return 120+30*gauss(); return Math.max(P.mu+P.sd*gauss(),-90);};
+const mood=m=>m?[m.coin>=80&&'코인 폭등',m.coin<=-45&&'코인 폭락',m.stock>=20&&'증시 호황',m.stock<=-20&&'증시 폭락'].filter(Boolean):[];
+const pc=v=>(v>0?'+':'')+(Math.round(v*10)/10)+'%';
 
 // ---------- 저장 ----------
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -1031,6 +1046,13 @@ if(typeof document!=='undefined'){
         <div class="meter" style="--bar:${COL2[k]}"><i style="width:${lo}%"></i><i class="${cl(z-a)}" style="left:${lo}%;width:${Math.abs(z-a)}%"></i><u style="left:${a}%"></u></div></div>`;};
     // 재정
     const L=S.led, net=L.inc-L.exp, ICO={인건비:'학사모','성적 장학금':'학점','집안 지원':'학사모',생활비:'식사',월세:'식사',외식:'식사',모임:'식사','집 구매':'자산','과외 받기':'강의','어학 연수':'영어',플렉스:'행복','가성비 절약':'영수증',투자:'코인'};
+    const invBox=()=>{const I=S.inv; if(!I)return ''; const P=PORT[I.k], H=(S.mktH||[]).slice(-8), mx=Math.max(10,...H.map(m=>Math.abs(m[I.k])));
+      const bars=H.map((m,i)=>{const v=m[I.k],h=Math.round(Math.abs(v)/mx*40);return `<span><i class="${v>=0?'up':'dn'}${i===H.length-1?' cur':''}" style="height:${Math.max(h,2)}px;${v>=0?`bottom:50%`:`top:50%`}" title="${pc(v)}"></i></span>`;}).join('');
+      return `<div class="inv"><div class="invh">${ic(P.ico)}<b>투자 · ${P.n}</b>${mood(S.mkt).map(x=>`<span class="tag">${x}</span>`).join('')}</div>
+        ${I.pct==null?'<p class="muted">잔고가 없어 이번 학기에는 굴릴 돈이 없었다.</p>':`<div class="invr"><span class="muted num">${won(I.base)} →</span><b class="num">${won(I.base+I.g)}</b><em class="num ${cl(I.g)}">${I.g>0?'+':''}${won(I.g)} (${pc(I.pct)})</em></div>`}
+        <div class="invs"><div><span>누적 투자 수익</span><b class="num ${cl(S.invSum)}">${S.invSum>0?'+':''}${won(S.invSum||0)}</b></div><div><span>입학 후 누적 수익률</span><b class="num ${cl(S.invIdx-100)}">${pc((S.invIdx||100)-100)}</b></div></div>
+        <div class="spark" aria-label="최근 학기 ${P.n} 수익률">${bars}</div><small class="muted">최근 ${H.length}학기 ${P.n} 수익률</small>
+        <p class="cmp">${Object.keys(PORT).map(k=>`<span${k===I.k?' class="me"':''}>${PORT[k].n} <b class="num ${cl(S.mkt[k])}">${pc(S.mkt[k])}</b></span>`).join('')}</p></div>`;};
     const items=(o,def)=>Object.entries(o||{}).sort((x,y)=>y[1]-x[1]).map(([n,v])=>`<div class="it">${ic(ICO[n]||def)}<span>${n}</span><b class="num">${won(v)}</b></div>`).join('');
     const bal=(icon,n,a,z)=>`<div class="bal">${ic(icon)}<b>${n}</b><span class="muted num">${won(a)} →</span><span class="chip pill num">${won(z)}</span></div>`;
     // 관계: [그림, 이름, 사이, 한 줄, 지금 친밀도, 이전 친밀도, 새 인연]. 교수·라이벌·연인의 호감 0~5는 20을 곱해 같은 눈금으로 보인다.
@@ -1053,7 +1075,7 @@ if(typeof document!=='undefined'){
         ${hl('동전','순수익',`${net>0?'+':''}${won(net)}`)}
         <div class="io"><div><div class="ioh in"><span class="chip">수입</span><b class="num">${won(L.inc)}</b></div>${items(L.in,'가방')}</div>
           <div><div class="ioh out"><span class="chip">지출</span><b class="num">${won(L.exp)}</b></div>${items(L.out,'영수증')}</div></div>
-        ${bal('통장','통장 잔고',b.money,S.money)}${bal('자산','총자산',asset(b),asset(S))}</section>
+        ${bal('통장','통장 잔고',b.money,S.money)}${bal('자산','총자산',asset(b),asset(S))}${invBox()}</section>
       <section class="card">${sec('관계','함께한 사람들')}
         ${hl('인연','',[nw&&`새 인연 ${nw}명`,up&&`깊어진 관계 ${up}명`,bye&&'이별 1명'].filter(Boolean).join(' · ')||'변함없는 한 학기')}
         <div>${ppl.map(p=>`<div class="per">${ic(p[0],'인물-')}<div><p><b>${esc(p[1])}</b> · ${p[2]}</p><small>${p[6]?'<span class="tag new">신규</span>':''}${esc(p[3])}</small></div>
@@ -1082,7 +1104,7 @@ if(typeof document!=='undefined'){
         return opt('buy',k,o,on,!ok||poor&&!on,`${won(o.price)} · ${o.d}${!ok?(k==='house'?' · 보유 중':' · 복무 중에는 못 한다'):poor?' · 잔고 부족':''}${k==='abroad'?` · 현재 어학 능력 ${S.lingo||0}`:''}`);}).join('')}</div>
       <i class="rule" style="display:block;margin:18px 6px"></i>
       <p class="hint">생활 수준을 하나 선택하세요</p><div role="radiogroup" aria-label="생활 수준">${Object.keys(LIFE).map(k=>opt('life',k,LIFE[k],(S.life||'mid')===k,0,LIFE[k].d)).join('')}</div>
-      <p class="hint">통장 잔고를 어디에 둘지 선택하세요</p><div role="radiogroup" aria-label="재산 운용">${Object.keys(PORT).map(k=>opt('port',k,PORT[k],(S.port||'dep')===k,0,PORT[k].d)).join('')}</div>`;
+      <p class="hint">통장 잔고를 어디에 둘지 선택하세요</p><div role="radiogroup" aria-label="재산 운용">${Object.keys(PORT).map(k=>opt('port',k,PORT[k],(S.port||'dep')===k,0,PORT[k].d+(S.mkt?` · 지난 학기 <span class="${S.mkt[k]>0?'up':S.mkt[k]<0?'down':'muted'}" style="font-weight:700">${pc(S.mkt[k])}</span>`:''))).join('')}</div>`;
     // 관계 접기: 2026-11-13 시안. 사람마다 행동 6개. 그림 에셋이 없는 선물·손절·청혼은 12×12 도트 SVG.
     const PXC={k:'#3a2420',r:'#c8323c',y:'#f0b93a',g:'#8a8f99',b:'#9fd3f0',w:'#fff'}, px=rows=>`<svg class="ico" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">${rows.split(' ').map((r,y)=>[...r].map((c,x)=>PXC[c]?`<rect x="${x}" y="${y}" width="1" height="1" fill="${PXC[c]}"/>`:'').join('')).join('')}</svg>`;
     const RI={trip:ic('가방'),meal:ic('식사'),confess:ic('매력'),
