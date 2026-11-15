@@ -16,7 +16,7 @@ const EXAMS=[['3월','모의고사'],['6월','모의고사'],['9월','모의고�
 const rollExam=(res,r=Math.random)=>EXAMS.map(()=>clamp(Math.round(9-res/12+r()*3-1.5),1,9));
 function talentOf(st){const v=STATS.map(k=>st[k]); if(Math.max(...v)-Math.min(...v)<=12)return'고른형';
   const top=STATS.reduce((a,k)=>st[k]>st[a]?k:a); return Object.keys(TALENT).find(t=>TALENT[t]===top);}
-const UG=[null,{n:'경남한빛대',region:'경상',rent:120,tuition:220},{n:'중앙과기대',region:'경기',rent:180,tuition:340},{n:'한국대',region:'서울',rent:240,tuition:300}];
+const UG=[null,{n:'경남한빛대',region:'경상',rent:120,tuition:220,rep:74},{n:'중앙과기대',region:'경기',rent:180,tuition:340,rep:85},{n:'한국대',region:'서울',rent:240,tuition:300,rep:92}];
 // 새 인생에서 고르는 것. 고등학교는 시작 능력치를 조금 옮기고, 희망 대학은 수능 등급으로 판정해(CUT 등급이면 60%, 한 등급마다 ±35%) 불합격하면 한 단계 아래로 이어진다. 입학 장학금은 실제 진학 대학으로 계산한다.
 const HS=[{n:'일반고',d:'변화 없음',fx:{}},{n:'과학고',d:'연구+ 매력-',fx:{res:5,cha:-3}},{n:'외국어고',d:'강의+ 연구-',fx:{lec:5,res:-3}},{n:'특성화고',d:'경제+ 연구-',fx:{eco:5,res:-3}}];
 const CUT=[0,9,5,3], SCHOLAR=300; // 대학별 기준 수능 등급: 경남한빛대 누구나, 중앙과기대 5, 한국대 3
