@@ -19,7 +19,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--px);font-size:15px;
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
 #app{max-width:440px;margin:0 auto;height:100%;display:flex;flex-direction:column;gap:14px;padding-block:14px}
-/* 넓은 화면에서는 휴대폰 틀 안에 띄운다. transform이 있어야 팝업(position:fixed)이 틀 안에 갇힌다. */
+/* 넓은 화면에서는 휴대폰 틀 안에 띄운다. 선택 모달은 #app 밖의 dialog로 화면 중앙에 연다. */
 @media (min-width:520px) and (min-height:600px){
   body{background:#e6d8c6;padding:0;display:grid;place-items:center}
   #app{width:430px;max-width:none;height:min(900px,calc(100vh - 48px));margin:0;padding:14px 16px;overflow:hidden;
@@ -32,10 +32,10 @@ h2{font-weight:700;font-size:19px;margin:0;color:var(--accent);text-wrap:balance
 .muted{color:var(--muted)}
 .num{font-variant-numeric:tabular-nums}
 /* 도트 테두리: 네 변에만 그림자를 주면 모서리가 한 칸 비어 계단처럼 보인다 */
-.panel,.slot,.choice,.sheet,.btn,.pick button,input[type=text],select{border:0;border-radius:0;
+.panel,.slot,.btn,.pick button,input[type=text],select{border:0;border-radius:0;
   box-shadow:0 -3px 0 var(--e),0 3px 0 var(--e),-3px 0 0 var(--e),3px 0 0 var(--e);--e:var(--line)}
 .panel{background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:10px}
-.frame,.sheet{--e:var(--accent)}
+.frame{--e:var(--accent)}
 .cover{border-top:3px solid var(--accent);border-bottom:3px solid var(--line);padding:10px 0 12px;display:flex;flex-direction:column;gap:2px}
 .row{display:flex;gap:14px;align-items:center}
 .row>*{min-width:0}
@@ -57,11 +57,64 @@ h2{font-weight:700;font-size:19px;margin:0;color:var(--accent);text-wrap:balance
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:3px solid var(--line)}
 .tabs button{padding:12px 4px;color:var(--muted)}
 .tabs button.on{color:var(--accent);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
-.overlay{position:fixed;inset:0;background:rgba(60,10,20,.55);display:flex;align-items:flex-end;justify-content:center;z-index:5;
-  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.sheet{width:100%;max-width:440px;max-height:100%;overflow-y:auto;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:14px}
-.choice{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:12px;background:var(--bg)}
-.choice span:first-child{min-width:0}
+/* 선택 모달: 1in8b 레퍼런스의 옅은 패널·얇은 구분선·번호 선택지. 게임 본문의 도트 스타일과 분리한다. */
+.decision-modal{--dm-bg:#f7faf8;--dm-ink:#152830;--dm-muted:#52666d;--dm-line:#c6d3cf;--dm-choice:#eaf0ed;
+  position:fixed;inset:0;margin:auto;padding:0;width:calc(100% - 32px);max-width:560px;
+  max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;
+  border:1px solid var(--dm-line);border-radius:4px;background:var(--dm-bg);color:var(--dm-ink);
+  box-shadow:0 18px 64px rgba(15,30,34,.22);font:14px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  text-align:left;scrollbar-width:thin;color-scheme:light}
+.decision-modal::backdrop{background:rgba(23,39,42,.58)}
+.decision-modal:not([open]){display:none}
+.decision-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;
+  min-height:52px;padding:12px 18px;border-bottom:1px solid var(--dm-line)}
+.decision-eyebrow{font-size:12px;font-weight:500;color:#9a2443;letter-spacing:.04em}
+.decision-meta{font-size:12px;color:var(--dm-muted);font-variant-numeric:tabular-nums}
+.decision-content{padding:18px}
+.decision-title{margin:0 0 8px;color:var(--dm-ink);font-size:24px;line-height:1.4;letter-spacing:-.035em;
+  font-weight:750;overflow-wrap:anywhere;text-wrap:pretty}
+.decision-title:focus{outline:none}
+.decision-description{margin:0 0 14px;color:var(--dm-muted);font-size:14px;line-height:1.8;overflow-wrap:anywhere}
+.decision-note{margin:0 0 14px;padding:10px 12px;background:#dfeeea;color:#455f66;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
+.decision-note b{font-weight:650}
+.decision-options{display:flex;flex-direction:column;gap:8px}
+.decision-option{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:14px;
+  width:100%;min-height:54px;padding:13px 14px;border:1px solid var(--dm-line);border-radius:2px;
+  background:var(--dm-choice);color:var(--dm-ink);text-align:left;font:inherit;line-height:1.65;
+  transition:background-color .14s,border-color .14s,box-shadow .14s}
+.decision-number{align-self:start;padding-top:2px;color:var(--dm-muted);font-size:12px;font-weight:400;font-variant-numeric:tabular-nums}
+.decision-option-main{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 12px;min-width:0}
+.decision-option-text{flex:1 1 190px;min-width:0;font-weight:650;overflow-wrap:anywhere}
+.decision-tag{flex:none;max-width:100%;padding:1px 7px;border:1px solid #b9c9c3;border-radius:2px;
+  color:#476158;font-size:11px;font-weight:500;line-height:1.65;overflow-wrap:anywhere}
+.decision-tag.is-good{border-color:#9fbfaf;background:#e2eee6;color:#236146}
+.decision-tag.is-risk{border-color:#d7b3a8;background:#f6e9e2;color:#8b3b28}
+.decision-option:disabled{background:#f1f4f2;border-style:dashed;color:#6a7976;cursor:not-allowed}
+.decision-option:disabled .decision-tag{border-color:#c6ceca;background:transparent;color:#64726d}
+.decision-option.is-danger .decision-option-text{color:#923c43}
+.decision-option:focus-visible,.decision-confirm:focus-visible{outline:3px solid #8b0a2b;outline-offset:3px}
+@media(hover:hover){.decision-option:not(:disabled):hover{background:#dde8e3;border-color:#8da59b;box-shadow:0 0 0 1px #8da59b}}
+.decision-option:not(:disabled):active{background:#d5e2dc}
+.decision-confirm{width:100%;min-height:46px;padding:10px 16px;border:1px solid #243e45;border-radius:3px;
+  background:#243e45;color:#fff;font:inherit;font-weight:650;transition:background-color .14s}
+.decision-confirm:hover{background:#172e35}
+.decision-foot{margin:14px 0 0;text-align:center;color:#62746f;font-size:12px;line-height:1.6}
+.decision-outcome{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:10px 12px;background:#edf1e8}
+.decision-outcome img{width:42px;height:42px;object-fit:contain;image-rendering:pixelated}
+.decision-outcome strong{font-size:14px;font-weight:650;color:#67531e}
+@media(max-width:480px){
+  .decision-modal{width:calc(100% - 24px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
+  .decision-head{padding:11px 16px;gap:4px 12px}.decision-content{padding:18px 16px 16px}
+  .decision-title{font-size:22px}.decision-option{gap:10px;padding:12px;min-height:54px}
+  .decision-option-text{flex-basis:170px}
+}
+@media(prefers-reduced-motion:no-preference){
+  .decision-modal[open]{animation:decision-in .18s ease-out}
+  .decision-modal[open]::backdrop{animation:decision-backdrop .18s ease-out}
+  @keyframes decision-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+  @keyframes decision-backdrop{from{background:rgba(23,39,42,0)}to{background:rgba(23,39,42,.58)}}
+}
+@media(prefers-reduced-motion:reduce){.decision-option,.decision-confirm{transition:none}}
 .tag{flex:none;font-size:12px;padding:2px 8px;border:2px solid var(--line);color:var(--muted);white-space:nowrap}
 .tag.risk{color:var(--bad);border-color:var(--bad)}
 .stamp{align-self:flex-start;font-weight:700;font-size:20px;color:var(--accent);border:3px solid var(--accent);padding:2px 12px;transform:rotate(-4deg);letter-spacing:.1em}
@@ -255,7 +308,6 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .field{display:grid;grid-template-columns:7em 1fr;align-items:center;gap:12px}
 .field>:first-child{white-space:nowrap;font-weight:700;font-size:17px;color:var(--accent)}
 p{margin:0}
-@media (prefers-reduced-motion:no-preference){ .sheet{animation:up .18s ease-out} @keyframes up{from{transform:translateY(12px);opacity:.6}to{transform:none;opacity:1}} }
 /* 새 인생 프롤로그: 배경 설명을 목록 대신 문단으로 천천히 읽는다. */
 .prologue{flex:1;min-height:0;display:flex;flex-direction:column;gap:18px;padding:10px 6px 4px}
 .prologue-top{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px}
@@ -315,7 +367,6 @@ p{margin:0}
 .now small{font-size:15px;color:var(--muted)}
 .dchips{display:flex;flex-wrap:wrap;gap:6px}
 .dchips span{font-size:15px;font-weight:700;padding:2px 10px;background:#fdecc4}
-.choice:disabled{opacity:.45;cursor:default}
 .tag.good{color:var(--good);border-color:var(--good)}
 @media (prefers-reduced-motion:no-preference){.now.pop{animation:recIn .5s ease-out}}
 .tsum{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);white-space:nowrap}
@@ -410,6 +461,7 @@ p{margin:0}
 @media(max-width:380px){.gc-top{grid-template-columns:48px 1fr auto}.gc-bld{width:48px}.gc-top small{grid-column:2;grid-row:2;border:0;padding:0}.gc-top .uc-stamp{grid-column:3;grid-row:1/3}.gc-mid{grid-template-columns:64px 1fr}.gc-face{width:64px}}
 </style>
 <div id="app"></div>
+<dialog id="decision-modal" class="decision-modal" aria-labelledby="decision-title" aria-describedby="decision-description"></dialog>
 <script>
 // ponytail: 시제품이라 데이터와 엔진과 화면이 한 파일. 전체 버전에서 사건·학교·칭호를 데이터 파일로 분리.
 'use strict';
@@ -1045,7 +1097,7 @@ function dogam(kind,n){const d=store.get('nobel.dogam')||{titles:[],endings:[]};
 
 // ---------- 화면 ----------
 if(typeof document!=='undefined'){
-  const app=document.getElementById('app'), ui={screen:'home',sheet:null,fold:{},form:{name:'',gender:'여',field:FIELDS[0],hs:0,hope:3,home:0,pick:0,cands:[]}};
+  const app=document.getElementById('app'), decisionDialog=document.getElementById('decision-modal'), ui={screen:'home',sheet:null,fold:{},form:{name:'',gender:'여',field:FIELDS[0],hs:0,hope:3,home:0,pick:0,cands:[]}};
   const BACK='<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M6 3h2v2H7v1h7v4H7v1h1v2H6v-1H5v-1H4v-1H3V9H2V7h1V6h1V5h1V4h1z"/></svg>';
   const TSN={res:'연구력',lec:'강의력',eco:'경제력',cha:'매력'}, TCOL={res:'#a3283f',lec:'#d49a1e',eco:'#8fae5f',cha:'#5b8fc6'}; // 재능 선택 시안의 이름과 막대 색
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1317,28 +1369,78 @@ if(typeof document!=='undefined'){
   // 지금 어느 화면인가. 같은 화면을 다시 그릴 때는 스크롤 위치를 지킨다.
   const kind=()=>ui.screen!=='game'||!S?ui.screen:S.end?'end':storyCard()?'intro':S.pend?'prog':S.q[0]&&S.q[0].k==='settle'?'settle':S.q.some(c=>c.k==='settle')?'prog':S.q[0]&&S.q[0].k==='offers'?'offers':'plan';
   const game=()=>({intro:prologue,end:ending,prog:progress,settle:()=>settle(S.q[0]),plan:strategy,offers:gradResult})[kind()]();
+  const DECISION_TITLES={
+    m_night:'중간고사 전날',m_present:'조별 발표의 주인공',m_gig:'하루짜리 아르바이트',m_senior:'선배의 저녁 초대',m_weekend:'아무 일정 없는 주말',
+    m_lab:'랩 미팅의 질문',m_appeal:'조교실에 찾아온 학생',m_receipt:'정산 마감 하루 전',m_collab:'함께 연구하자는 제안',m_vacation:'답장 없는 휴가 신청',
+    team:'사라진 조원들',coffee:'대학원생 선배의 제안',parent:'과외비를 둘러싼 대화',rival1:'게시판에 붙은 동기의 이름',fest:'축제 주점의 총무',talk:'대학원, 생각 있나?',
+    blind:'친구가 잡아 준 소개팅',katalk:'새벽 두 시의 카톡',rev2:'2번 심사위원의 요구',pay:'연구실 공동 통장',party:'학회 뒤풀이의 빈자리',
+    receipt:'연구실의 새 총무',data:'점 하나의 유혹',job:'단톡방에 올라온 연봉',senior:'8년 차 선배의 졸업',holiday:'명절에 마주한 질문',
+    conf:'첫 학회 구두 발표',marry:'언제쯤 자리 잡을 수 있을까',draft:'월요일 아침까지',smoke:'장비에서 피어오른 연기',saju:'과학자의 사주',
+    startup:'창업 팀의 합류 제안',popular:'행사의 주인공',scoop:'누군가 먼저 쓴 논문',grant:'연구 과제 공모',student:'연구실 문을 두드린 학생',lecEval:'강의 평가가 도착했다'
+  };
+  function decisionOption(c,i,action='res'){
+    return `<button type="button" class="decision-option${c.danger?' is-danger':''}" data-a="${action}" data-v="${i}"${c.lock?' disabled':''}>
+      <span class="decision-number" aria-hidden="true">${i+1}</span><span class="decision-option-main"><span class="decision-option-text">${nl(c.l)}</span>
+      ${c.tag?`<span class="decision-tag${c.risk?' is-risk':''}${c.good?' is-good':''}">${esc(c.tag)}</span>`:''}</span></button>`;
+  }
+  function decisionPanel({eyebrow,title,body,note='',stamp='',choices,footer=''}){
+    const progressCard=S.q.find(c=>c.k==='settle'), t=progressCard?progressCard.t:S.t;
+    const week=S.pend?Math.min(16,(8-S.pend.length)*2):0;
+    const meta=`${20+Math.floor(t/2)}세 · ${t%2+1}학기${week?' · '+week+'주':''}`;
+    return `<header class="decision-head"><span class="decision-eyebrow">${esc(eyebrow)}</span><span class="decision-meta">${esc(meta)}</span></header>
+      <div class="decision-content"><h2 class="decision-title" id="decision-title" tabindex="-1">${esc(title)}</h2>
+      <p class="decision-description" id="decision-description">${nl(body)}</p>
+      ${stamp?`<div class="decision-outcome"><img src="에셋/메달.webp" alt=""><strong>${esc(stamp)}</strong></div>`:''}
+      ${note?`<aside class="decision-note">${esc(note)}</aside>`:''}
+      <div class="decision-options">${choices}</div>${footer?`<p class="decision-foot">${esc(footer)}</p>`:''}</div>`;
+  }
   function overlay(){
     if(ui.screen!=='game'||!S||S.end||storyCard())return'';
     const c0=S.q[0], onSettle=c0&&c0.k==='settle'; if(kind()==='offers')return'';
     if(S.pend&&c0&&!(c0.k==='event'||c0.ev))return''; // 진행 중에는 그 달 사건만 띄운다
-    if(ui.sheet==='retire')return `<div class="overlay"><div class="sheet"><h2>은퇴하기</h2><p>학계를 떠나면 이 인생은 여기서 끝나고 결산으로 넘어갑니다. 되돌릴 수 없습니다.</p><button class="btn" data-a="retireYes">떠난다</button><button class="btn ghost" data-a="close">계속 버틴다</button></div></div>`;
+    if(ui.sheet==='retire')return decisionPanel({eyebrow:'인생의 갈림길',title:'학계를 떠날까요?',body:'학계를 떠나면 이 인생은 여기서 끝나고 결산으로 넘어갑니다. 되돌릴 수 없습니다.',
+      choices:decisionOption({l:'계속 버틴다'},0,'close')+decisionOption({l:'떠난다',danger:1},1,'retireYes')});
     const v=onSettle?null:view(); if(!v)return'';
-    return `<div class="overlay"><div class="sheet">${v.stamp?'<img class="medal" src="에셋/메달.webp" alt="">':''}<span class="label">${esc(v.title)}</span>${v.stamp?`<div class="stamp">${esc(v.stamp)}</div>`:''}<p>${nl(v.body)}</p>${v.ch.map((c,i)=>
-      v.ch.length===1&&!c.tag?`<button class="btn" data-a="res" data-v="${i}">${esc(c.l)}</button>`
-      :`<button class="choice" data-a="res" data-v="${i}"${c.lock?' disabled':''}><span>${nl(c.l)}</span>${c.tag?`<span class="tag${c.risk?' risk':''}${c.good?' good':''}">${c.tag}</span>`:''}</button>`).join('')}</div></div>`;
+    const event=c0.k==='event', parts=v.body.split('\n\n'), result=c0.k==='msg'&&c0.ev&&parts.length>1;
+    const needs=event?[...new Set(evById(c0.id).c.filter(c=>c.need).map(c=>c.need[0]))]:[];
+    const note=result?parts.pop():needs.length?'현재 능력치 · '+needs.map(k=>`${DN[k]} ${Math.floor(S[k])}`).join(' · '):'';
+    return decisionPanel({eyebrow:event?v.title:c0.k==='msg'?'선택의 결과':'중요한 결정',title:event?(DECISION_TITLES[c0.id]||'어떤 선택을 할까?'):v.title,
+      body:result?parts.join('\n\n'):v.body,note,stamp:v.stamp,
+      choices:v.ch.map((c,i)=>v.ch.length===1&&!c.tag?`<button type="button" class="decision-confirm" data-a="res" data-v="${i}">${esc(c.l)}</button>`:decisionOption(c,i)).join(''),
+      footer:v.ch.length>1?'선택을 마치면 이야기가 이어집니다.':''});
+  }
+  // 안정적인 dialog를 #app 밖에 두어 화면 재렌더와 휴대폰 틀의 transform에서 분리한다.
+  // showModal()이 배경 클릭·탭 이동을 막는다. 결정 카드는 Escape로 건너뛸 수 없다.
+  let dialogMarkup='', dialogReturn=null;
+  function syncDecision(returnAction){
+    const html=overlay(), wasOpen=decisionDialog.open;
+    if(!html){
+      if(wasOpen){
+        decisionDialog.close();
+        const target=[...app.querySelectorAll('button[data-a]:not(:disabled)')].find(b=>dialogReturn&&b.dataset.a===dialogReturn.a&&b.dataset.v===dialogReturn.v)
+          ||app.querySelector('button:not(:disabled)');
+        if(target)target.focus({preventScroll:true});
+      }
+      decisionDialog.innerHTML='';dialogMarkup='';dialogReturn=null;return;
+    }
+    if(!wasOpen)dialogReturn=returnAction;
+    const changed=html!==dialogMarkup;
+    if(changed){decisionDialog.innerHTML=html;dialogMarkup=html;decisionDialog.scrollTop=0;}
+    if(!wasOpen)decisionDialog.showModal();
+    if(changed||!wasOpen)decisionDialog.querySelector('#decision-title').focus({preventScroll:true});
   }
   function render(){clearTimeout(storyTimer);storyTimer=null;clearTimeout(ui.examTimer);
     if(ui.screen==='exam'&&ui.examStep<EXAMS.length)ui.examTimer=setTimeout(()=>{if(ui.screen==='exam'){ui.examStep++;render();}},ui.examStep?1100:700);const k=kind(), sc=app.querySelector('.scroll'), y=k===ui.kind&&sc?sc.scrollTop:0; ui.kind=k;
-    app.innerHTML=(ui.screen==='game'&&S?game():home())+overlay(); ui.flash=0; if(y)app.querySelector('.scroll').scrollTop=y;
+    const active=document.activeElement, returnAction=active&&app.contains(active)&&active.dataset.a?{a:active.dataset.a,v:active.dataset.v}:null;
+    app.innerHTML=ui.screen==='game'&&S?game():home();syncDecision(returnAction); ui.flash=0; if(y)app.querySelector('.scroll').scrollTop=y;
     if(k==='intro')animateStory();
     if(S&&S.pend&&!ui.timer)ui.timer=setInterval(tick,900); else if((!S||!S.pend)&&ui.timer){clearInterval(ui.timer);ui.timer=null;}}
   const waiting=()=>{const c=S.q[0];return c&&(c.k==='event'||c.ev);};
   function tick(){ if(!S||!S.pend||ui.screen!=='game'||ui.paused||waiting()){if(!S||!S.pend)render();return;} reveal(); ui.flash=S.log.length; render(); }
   app.addEventListener('toggle',e=>{const d=e.target; if(d.tagName==='DETAILS'&&d.dataset.k)ui.fold[d.dataset.k]=d.open;},true); // 다시 그려도 펼침 상태를 지킨다
   app.addEventListener('input',e=>{const k=e.target.dataset.k;if(k)ui.form[k]=e.target.value;});
-  app.addEventListener('click',e=>{
+  function onAction(e){
     const b=e.target.closest('[data-a]'); if(!b||b.disabled)return; const a=b.dataset.a,v=b.dataset.v;
-    if(a==='close'&&e.target.closest('.sheet')&&b.classList.contains('overlay'))return;
     if(a==='go'){ui.from=ui.screen;ui.screen=v;ui.sheet=null; if(v==='talent'){ui.form.cands=[0,1,2].map(()=>rollStats());ui.form.pick=0;} if(v==='exam'){ui.form.exam=rollExam(ui.form.cands[+ui.form.pick].res);ui.examStep=0;} if(v==='result'){ui.form.admitRolls=[0,1,2].map(()=>Math.random());ui.form.uni=[3,2,1].find(passed);}} // 들어올 때마다 후보 3개를 새로 뽑는다
     else if(a==='form')ui.form[b.dataset.k]=v;
     else if(a==='skip')ui.examStep=EXAMS.length;
@@ -1349,7 +1451,7 @@ if(typeof document!=='undefined'){
     else if(a==='next'){ui.paused=false;advance();}
     else if(a==='pause')ui.paused=!ui.paused;
     else if(a==='play'){ui.paused=false; if(S.pend&&!waiting()){reveal();ui.flash=S.log.length;}} // 기다리지 않고 바로 2주를 넘긴다
-    else if(a==='res'){resolve(+v);ui.gpick=0;}
+    else if(a==='res'){const current=view(), i=Number(v);if(!Number.isInteger(i)||!current||!current.ch[i]||current.ch[i].lock)return;resolve(i);ui.gpick=0;}
     else if(a==='focus'){focus(v);save();}
     else if(a==='act'){S.act=S.act===v?null:v;save();}
     else if(a==='buy'){S.buy=S.buy||{};S.buy[v]=!S.buy[v];save();}
@@ -1360,7 +1462,10 @@ if(typeof document!=='undefined'){
     else if(a==='retireYes'){ui.sheet=null;finish('exit');}
     else if(a==='close')ui.sheet=null;
     render();
-  });
+  }
+  app.addEventListener('click',onAction);
+  decisionDialog.addEventListener('click',onAction);
+  decisionDialog.addEventListener('cancel',e=>{e.preventDefault();if(ui.sheet==='retire'){ui.sheet=null;render();}});
   S=store.get('nobel.life'); if(S&&!S.end){fixAlloc(); if(S.q[0]&&S.q[0].k==='offers'&&!S.q[0].list.some(o=>'ok' in o))S.q[0]=offers();} render(); // 예전 저장의 원서 카드는 새 방식으로 다시 판정
 }else{ globalThis.G={newLife,advance,resolve,view,reveal,focus,offers,career,CAREER,RETIRE_T,relAct,RACT,BUY,LIFE,PORT,UGF,ACTS,get S(){return S;},STATS,pts,josa,split1}; }
 </script>
