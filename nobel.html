@@ -901,12 +901,16 @@ function newLife(o){
 function reveal(){ const P=S.pend; if(!P)return; if(!P.length){S.pend=null;save();return;}
   const m=P.shift(), t=S.t-1; S.log.push({a:20+(t>>1),t,mo:m.mo,w:m.w,s:m.s,month:1,d:m.d,tone:m.t}); S.mid=S.mid||{}; for(const k in m.d||{})S.mid[k]=(S.mid[k]||0)+m.d[k]; if(m.ev)S.q.unshift({k:'event',id:m.ev,mo:m.mo,w:m.w}); save();}
 const stg=()=>S.army>0?'군 복무':S.stage==='ug'?`${Math.floor(S.ss/2)+1}학년`:`${S.stage==='ms'?'석사':'박사'} ${Math.floor(S.ss/2)+1}년 차`;
-function snap(){return{res:S.res,lec:S.lec,eco:S.eco,cha:S.cha,joy:S.joy,money:S.money,home:S.home,n:S.papers.length,f:{lab:S.lab?S.lab.fav:null,rival:S.rival.fav,partner:S.partner?S.partner.fav:null},p:Object.fromEntries((S.ppl||[]).map(x=>[x.n,x.v]))};}
+function snap(){return{res:S.res,lec:S.lec,eco:S.eco,cha:S.cha,joy:S.joy,money:S.money,dep:S.dep,jloan:S.jloan,hval:S.hval,mort:S.mort,n:S.papers.length,f:{lab:S.lab?S.lab.fav:null,rival:S.rival.fav,partner:S.partner?S.partner.fav:null},p:Object.fromEntries((S.ppl||[]).map(x=>[x.n,x.v]))};}
 
-const payMul=why=>why==='과외'||why==='수업 조교'?.5+S.lec/100:why==='아르바이트'?.5+S.eco/100:1;
+const inArmyNow=()=>S.army>0;
+const payMul=why=>why==='과외'?tutMul():why==='수업 조교'?.5+S.lec/100:why==='아르바이트'?jobTier()[2]:1;
+const payWhy=why=>why==='아르바이트'?`알바 (${jobTier()[1]})`:why;
 function advance(){
   if(S.end||S.q.length||S.pend)return; fixAlloc();
   const b=snap(), prog0=S.prog, ti0=S.titles.length, sem=S.t%2, semName=`${stg()} ${S.t%2+1}학기`; if(!S.led)S.led={inc:0,exp:0}; S.used=[]; S.brk=[]; S.spark=[]; S.mid={};
+  if(S.home&&!S.hval){S.house='own';S.hval=HOUSE_P;S.mort=0;S.home=0;} // 예전 저장의 '집 구매'
+  if(!HOUSING[S.house])S.house='dorm'; if(S.hnext&&!inArmyNow())moveTo(S.hnext); S.hnext=null;
   for(const k in S.buy||{}){const o=BUY[k]; if(o&&S.buy[k]&&buyOk(k)&&S.money>=o.price){fx({money:-o.price},o.n);buyGo(k);}} S.buy={};
   const adv=S.lab?ADV[S.lab.type]:null, joyMul=.85+S.joy/100*.3;
   let sick=false; const inArmy=S.army>0;
@@ -917,11 +921,11 @@ function advance(){
   }else{
     const F=ugf();
     if(F){ for(const k of STATS){const v=F.g[k]??1; if(v>0)grow(k,v,joyMul); else S[k]=clamp(S[k]+v,0,100);} S.used=[...STATS];
-      S.joy=clamp(S.joy+(F.joy??1),0,100); if(F.money)fx({money:Math.round(F.money*(F.money>0?payMul(F.why):1))},F.why); }
+      S.joy=clamp(S.joy+(F.joy??1),0,100); if(F.money)fx({money:Math.round(F.money*(F.money>0?payMul(F.why):1))},payWhy(F.why)); }
     else{ const gain={}; for(const[id,p]of blocks()){const a=ACT[id], m=eff(p), lin=p/25;
       for(const k in a.g||{}){gain[k]=(gain[k]||0)+a.g[k]*1.5*m*(k==='res'&&adv?adv.gain:1); if(!S.used.includes(k))S.used.push(k);}
       if(a.prog&&grad())S.prog+=(a.prog[0]+S.res*a.prog[1])*m*(adv.prog||1);
-      S.hp+=a.hp<0?a.hp*hpm(p):a.hp*lin; S.joy=clamp(S.joy+(a.joy||0)*lin,0,100); if(a.money)fx({money:Math.round(a.money*lin*payMul(AN[id]))},AN[id]);
+      S.hp+=a.hp<0?a.hp*hpm(p):a.hp*lin; S.joy=clamp(S.joy+(a.joy||0)*lin,0,100); if(a.money)fx({money:Math.round(a.money*lin*payMul(AN[id]))},payWhy(AN[id]));
     } for(const k in gain)grow(k,gain[k],joyMul); }
     // 연애: 관계 비중이 연인 호감을 지키고, 새 인연을 만든다 (예전 '연애' 칸)
     const rel=S.alloc.rel;
@@ -942,9 +946,16 @@ function advance(){
       else if(S.gpaLast!=null&&S.gpaLast<GPA_CUT){S.joy=clamp(S.joy-5,0,100); msg('성적표','등록금은 부모님이 내 주셨다. 성적표를 보신 뒤로 전화가 짧아졌다.');}
       fx({money:ALLOW[S.family]*6*(yr<2?1:.5)},'용돈'); // 3학년부터 용돈이 절반
       if(S.family===0)fx({money:100},'생활지원 장학금'); }
-    else fx({money:Math.round((S.stage==='ms'?600:1000)*adv.pay+(S.lab.pres===3?100:0))},'인건비');
+    else fx({money:Math.round(((S.stage==='ms'?600:1000)*adv.pay+(S.lab.pres===3?100:0))*(.9+S.eco/500))},'인건비'); // 영업력이 높으면 과제를 더 따 온다
     fx({money:-(S.stage==='ug'?300:360)},'생활비');
-    if(!S.home){ const H=HOUSING[houseOk(S.house)?S.house:'dorm']; if(H.cost)fx({money:-H.cost},H.n); S.joy=clamp(S.joy+H.joy,0,100); S.hp+=H.hp; }
+    { const H=HOUSING[S.house]||HOUSING.dorm; if(H.cost)fx({money:-H.cost},H.n); S.joy=clamp(S.joy+H.joy,0,100); S.hp+=H.hp; }
+    if(S.jloan)fx({money:-Math.round(S.jloan*.02)},'전세대출 이자');
+    if(S.mort)fx({money:-Math.round(S.mort*.0225)},'주담대 이자');
+    if(S.house==='jeonse'&&rnd()<.02){ const lost=S.dep-S.jloan; S.money-=S.jloan; S.dep=S.jloan=0; S.house='goshi'; S.joy=clamp(S.joy-15,0,100); log('전세사기를 당했다');
+      msg('전세사기',`집주인이 연락을 끊었다. 내 돈 ${won(lost)}이 사라졌고 전세대출은 고스란히 빚으로 남았다. 당장 고시원으로 옮겼다.`); }
+    if(S.house==='own'){ const ch=1.5+5*gauss(); S.hval=Math.round(S.hval*(1+ch/100)); S.hch=+ch.toFixed(1); }
+    // 부업
+    if(S.side&&S.side!=='none'&&sideOk(S.side)){ let g=S.side==='store'?(S.eco-45)*12+150*gauss():(S.cha-50)*10+200*gauss(); if(S.side==='yt'&&rnd()<.05)g+=1000; g=Math.round(g); fx({money:g,hp:-5,[S.side==='store'?'eco':'cha']:.5},SIDE[S.side].n+(g<0?' 손실':'')); }
     const L=LIFE[S.life||'mid']; if(L.cost)fx({money:-L.cost},L.cost>0?'플렉스':'가성비 절약'); S.joy=clamp(S.joy+L.joy,0,100); }
   // 투자: 세 상품의 이번 학기 시장 수익률을 모두 뽑고(결산창에서 비교해 보여 준다), 고른 상품만 내 돈에 반영한다.
   S.mkt=Object.fromEntries(Object.keys(PORT).map(k=>[k,+yieldPct(k).toFixed(1)])); (S.mktH||=[]).push(S.mkt); if(S.mktH.length>12)S.mktH.shift();
@@ -954,7 +965,7 @@ function advance(){
   // 빚: 잔고가 마이너스면 2,400만 원까지 생활비 대출(연 1.7%), 넘는 만큼 마이너스 통장(연 7%) 이자가 붙는다.
   if(S.money<0){const d=-S.money, i=Math.round(Math.min(d,LOAN_CAP)*.0085+Math.max(0,d-LOAN_CAP)*.035); if(i)fx({money:-i},'대출 이자');}
   // 회복, 감소, 행복
-  S.hp=clamp(S.hp+(sick?0:28+(S.home?5:0)),-50,S.hpMax);
+  S.hp=clamp(S.hp+(sick?0:28),-50,S.hpMax);
   for(const k of STATS)if(!S.used.includes(k)&&!inArmy)S[k]=clamp(S[k]-(.2+S[k]*.006)*(S.joy<30?1.5:1),0,100); // 안 쓰는 능력치는 아주 조금씩 녹슨다
   S.joy=clamp(S.joy+Math.min(3,((S.ppl||[]).filter(x=>x.v>=60).length+(S.partner?1:0))*.75)+(50-S.joy)*.03+(adv?adv.joy:0)+(S.hp<25?-4:0)+-debtJoy()+(S.partner?2:0)+(!inArmy&&!sick&&S.alloc.rel+S.alloc.rest===0?-5:0),0,100);
   if(grad()&&S.lab&&S.lab.fav>=4)S.prog+=3; // 지도교수와 가까우면 논문이 조금 더 나아간다
@@ -1150,12 +1161,33 @@ function resolve_(i){
 // ponytail: 가격·수익률은 손잡이. 수익률은 연 단위이고 학기(반년)마다 절반을 적용한다.
 const TUITION=300, GPA_CUT=2.5, ALLOW=[30,60,100], LOAN_CAP=2400; // 등록금(학기), 국가장학금 학점 기준, 집안별 월 용돈, 저금리 대출 한도
 const debtJoy=()=>S.money<0?Math.min(12,-S.money/250):0; // 빚이 클수록 학기마다 행복이 더 깎인다(250만 원당 1, 최대 12)
-const HOUSING={dorm:{n:'기숙사',cost:50,joy:0,hp:0,d:'학기 50만 원 · 룸메이트와 함께'},room:{n:'원룸 월세',cost:360,joy:2,hp:3,d:'월 60만 원 · 행복↑ 체력 회복↑'},family:{n:'본가 통학',cost:0,joy:-1,hp:-2,d:'돈은 안 든다 · 통학이 길다 (서울, 경기 출신만)'}};
-const houseOk=k=>k==='dorm'||k==='room'||k==='family'&&['서울','경기'].includes(S.from);
+// 주거 사다리 2026-11-15 (학기 = 6개월, 만 원). 고른 곳(S.hnext)으로 다음 학기가 시작될 때 이사한다.
+const HOUSING={
+ family:{n:'본가 통학',cost:0,joy:-1,hp:-2,d:'돈은 안 든다, 통학이 길다 (서울, 경기 출신만)'},
+ dorm:{n:'기숙사',cost:50,joy:0,hp:0,d:'학기 50만 원, 룸메이트와 함께'},
+ goshi:{n:'고시원',cost:210,joy:-2,hp:-2,d:'월 35만 원, 좁고 시끄럽다'},
+ room:{n:'원룸 월세',cost:360,joy:2,hp:3,d:'월 60만 원'},
+ offi:{n:'오피스텔',cost:540,joy:4,hp:4,d:'월 90만 원, 깔끔하고 역에서 가깝다'},
+ jeonse:{n:'투룸 전세',cost:90,joy:4,hp:4,d:'보증금 1억 (내 돈 2,000만 원 이상, 나머지 전세대출 연 4%), 관리비 월 15만 원, 전세사기 위험'},
+ own:{n:'내 집 (아파트)',cost:120,joy:7,hp:5,d:'5억 원, 내 돈 1.5억 + 주택담보대출 3.5억 (연 4.5%), 관리비 월 20만 원, 집값이 오르내린다'}};
+const JEONSE=10000, JMIN=2000, HOUSE_P=50000, HOUSE_DOWN=15000;
+const liquid=()=>S.money+(S.house==='jeonse'?(S.dep||0)-(S.jloan||0):0)+(S.house==='own'?(S.hval||0)-(S.mort||0):0); // 이사할 때 쓸 수 있는 돈
+const houseOk=k=>k===S.house||(k==='family'?['서울','경기'].includes(S.from):k==='jeonse'?liquid()>=JMIN:k==='own'?liquid()>=HOUSE_DOWN:!!HOUSING[k]);
+function moveTo(k){ if(!k||k===S.house||!houseOk(k))return;
+  if(S.house==='jeonse'){fx({money:(S.dep||0)-(S.jloan||0)},'전세 보증금 반환');S.dep=S.jloan=0;}
+  if(S.house==='own'){fx({money:(S.hval||0)-(S.mort||0)},'집 매각');log(`집을 ${won(S.hval)}에 팔았다`);S.hval=S.mort=0;}
+  if(k==='jeonse'){const mine=clamp(S.money,JMIN,JEONSE); fx({money:-mine},'전세 보증금'); S.dep=JEONSE; S.jloan=JEONSE-mine;}
+  if(k==='own'){fx({money:-HOUSE_DOWN},'집 구매 계약금'); S.hval=HOUSE_P; S.mort=HOUSE_P-HOUSE_DOWN; log('대출을 끼고 아파트를 샀다');}
+  log(HOUSING[k].n+'(으)로 이사'.replace('(으)로',/[가-힣]/.test(HOUSING[k].n.slice(-1))&&((HOUSING[k].n.slice(-1).charCodeAt(0)-44032)%28)?'으로':'로')); S.house=k;}
+// 영업력: 알바 등급이 오르고, 부업이 열린다. 과외 단가는 강의력과 학교에 따라.
+const JOBT=[[0,'편의점',.8],[40,'카페',1],[60,'매장 매니저',1.3],[75,'점장',1.7]];
+const jobTier=()=>JOBT.filter(x=>S.eco>=x[0]).pop(), jobNext=()=>JOBT.find(x=>S.eco<x[0]);
+const tutMul=()=>(.5+S.lec/100)*(grad()?1.2:[1,.7,.9,1.2][S.ugTier||1]);
+const SIDE={none:{n:'없음'},store:{n:'스마트스토어',need:['eco',60],d:'영업력에 따라 학기 수익, 체력 -5'},yt:{n:'유튜브',need:['cha',60],d:'매력에 따라 학기 수익, 가끔 대박, 체력 -5'}};
+const sideOk=k=>!SIDE[k].need||S[SIDE[k].need[0]]>=SIDE[k].need[1];
 // 이번 학기에 살 것: 나이와 높은 능력치에 따라 후보가 달라지고, 한 학기에 6개까지 보인다. g는 능력치 변화, x는 그 밖의 효과 한 줄.
 // lock: 능력치 조건(60 이상)이 붙은 것은 해금되면 위에 먼저 나온다. once: 인생에 한 번.
 const BUY={
- house:{n:'집 구매',price:5000,g:{joy:10},x:'주거비 0',can:()=>!S.home&&S.money>=4000,go(){S.home=1;log('집을 샀다');}},
  trip:{n:'국내 여행',price:100,g:{joy:8}},
  pt:{n:'헬스 PT',price:120,g:{hp:15,cha:1}},
  econ:{n:'재테크 강의',price:100,g:{eco:3}},
@@ -1269,11 +1301,11 @@ if(typeof document!=='undefined'){
   // 학기 진행·결산 화면이 같이 쓰는 것. c는 그 학기의 결산 카드, c.b는 학기 시작 때 값.
   const ovr=o=>Math.round(STATS.reduce((a,k)=>a+o[k],0)/4);
   const SL=k=>k==='joy'?'행복':SN[k]+(k==='cha'?'':'력'), COL={lec:'#8f2a3f',res:'#d49a1e',cha:'#7fa650',eco:'#4a7bbd',joy:'#149077'}, COL2={...COL,lec:'#d49a1e',res:'#7fa650',cha:'#8f2a3f'}; // 진행 시안과 결산 시안의 막대 색
-  const asset=o=>o.money+(o.home?BUY.house.price:0); // 재산 = 통장 + 집
+  const asset=o=>o.money+(o.dep||0)-(o.jloan||0)+(o.hval||0)-(o.mort||0); // 순자산 = 통장 + 전세 보증금 + 집 - 대출
   const top=(c,more='')=>`<header class="top"><div class="trow"><button class="homebtn" data-a="go" data-v="home" aria-label="홈으로">${HOUSE}</button><span class="num">${20+(c.t>>1)}세 · ${esc(c.name.replace(/ \d학기$/,''))}</span><b class="who">${esc(S.name)}</b><span class="ovr">OVR<b class="num">${ovr(c.b)}</b></span></div>${more}</header>`;
   // 2026-11-15 UI: 그림 한 장 위에 중요한 변화(평점, 능력치, 통장, 투자, 관계)를 다 올리고, 나머지는 접기에 넣어 세로를 줄인다.
   const sgw=v=>(v>0?'+':v<0?'−':'')+won(Math.abs(v)), tone=v=>v>0?'up':v<0?'down':'muted';
-  const cap=()=>[S.lab?S.lab.school:UG[S.ugTier]?UG[S.ugTier].n:'',S.army>0?'군 복무':role(),S.home?'내 집':HOUSING[houseOk(S.house)?S.house:'dorm'].n,S.partner?'연인 '+esc(S.partner.name):''].filter(Boolean).join(' · ');
+  const cap=()=>[S.lab?S.lab.school:UG[S.ugTier]?UG[S.ugTier].n:'',S.army>0?'군 복무':role(),(HOUSING[S.house]||HOUSING.dorm).n,S.partner?'연인 '+esc(S.partner.name):''].filter(Boolean).join(' · ');
   // 장면 도트 그림: 그 학기 가장 크게 오른 능력치. 12×12, 글자 하나가 한 칸.
   const SPC={k:'#2b1d1a',w:'#ffffff',g:'#5bc97a',G:'#2f8f52',y:'#f0b93a',o:'#c9831c',p:'#f08aa2',r:'#d4384f',b:'#8fd0f0',B:'#3d6fb0',n:'#7a4a2a',s:'#ffe6a0'};
   const SPR={res:'....kkkk.... ....kbbk.... ....kbbk.... ....kbbk.... ...kbbbbk... ..kbggggbk.. .kgggggggk.. kggwgggwgggk kgggggwggggk kggggggggggk .kGGGGGGGGk. ..kkkkkkkk..',
@@ -1363,13 +1395,18 @@ if(typeof document!=='undefined'){
     const xr=(a,k,on,dis,n,d,r)=>`<button class="xr${on?' on':''}" role="${a==='buy'?'checkbox':'radio'}" aria-checked="${on}" data-a="${a}" data-v="${k}"${dis?' disabled':''}><span><b>${n}</b><small>${d}</small></span><em>${r||''}</em><i aria-hidden="true">${on?'✓':''}</i></button>`;
     const P0=PORT[S.port||'dep'], seg=(a,lab,O,cur,ok)=>`<div class="seg"><span>${lab}</span><div role="radiogroup" aria-label="${lab}">${Object.keys(O).map(k=>{const dis=ok&&!ok(k);return `<button class="${cur===k&&!dis?'on':''}" role="radio" aria-checked="${cur===k}" data-a="${a}" data-v="${k}"${dis?' disabled':''}>${O[k].n}<small>${O[k].cost?sgw(-O[k].cost):'0'}</small></button>`;}).join('')}</div></div>`;
     const invUI=`<div class="fx">
-      <div class="fxg"><div><span>순자산</span><b class="num">${won(asset(S))}</b><small>${S.home?`집을 빼면 ${won(S.money)}`:`집 없음 · ${HOUSING[houseOk(S.house)?S.house:'dorm'].n}`}</small></div>
+      <div class="fxg"><div><span>순자산</span><b class="num">${won(asset(S))}</b><small>${S.house==='own'?`집 ${won(S.hval)}, 대출 ${won(S.mort)}`:S.house==='jeonse'?`보증금 ${won(S.dep)}, 대출 ${won(S.jloan)}`:(HOUSING[S.house]||HOUSING.dorm).n}</small></div>
         <div><span>통장 잔고</span><b class="num ${S.money<0?'down':''}">${won(S.money)}</b><small>${S.money>0?`${P0.n}에 넣어 둠`:S.money<0?`빚 · 학기 이자 약 ${won(Math.round(Math.min(-S.money,LOAN_CAP)*.0085+Math.max(0,-S.money-LOAN_CAP)*.035))} · 행복 −${Math.round(debtJoy())}`:'굴릴 돈이 없다'}</small></div>
         <div><span>학기 소득</span><b class="num">${won(S.inc0||0)}</b><small>월 ${won((S.inc0||0)/6)}</small></div>
         <div><span>투자 누적</span><b class="num ${tone(S.invSum||0)}">${sgw(S.invSum||0)}</b><small>입학 후 수익률 ${pc((S.invIdx||100)-100)}</small></div></div>
       <h4>재산 운용</h4>
       <div role="radiogroup" aria-label="재산 운용">${Object.keys(PORT).map(k=>xr('port',k,(S.port||'dep')===k,0,PORT[k].n,PORT[k].d,S.mkt?`<b class="${tone(S.mkt[k])}">${pc(S.mkt[k])}</b>`:'')).join('')}</div>
-      ${S.home?'':seg('house','주거',HOUSING,houseOk(S.house)?S.house:'dorm',houseOk)}${seg('life','생활',LIFE,S.life||'mid')}
+      <h4>주거 <small>지금 ${(HOUSING[S.house]||HOUSING.dorm).n}${S.house==='own'&&S.hch!=null?`, 지난 학기 집값 ${pc(S.hch)}`:''}</small></h4>
+      <div role="radiogroup" aria-label="주거">${Object.keys(HOUSING).map(k=>{const H=HOUSING[k],cur=(S.hnext||S.house||'dorm')===k,ok=houseOk(k);return xr('house',k,cur,!ok,H.n+(k===S.house?' <i class="lk">현재</i>':''),H.d,H.cost?`<b class="down">−${won(H.cost)}</b>`:'<span class="muted">0</span>');}).join('')}</div>
+      ${seg('life','생활',LIFE,S.life||'mid')}
+      <h4>일과 부업 <small>영업력이 높을수록 더 번다</small></h4>
+      <ul class="fxl"><li><span>알바 등급</span><b>${jobTier()[1]} ×${jobTier()[2]}${jobNext()?` <small class="muted">다음 ${jobNext()[1]} (영업 ${jobNext()[0]})</small>`:''}</b></li><li><span>과외 단가</span><b>×${tutMul().toFixed(2)} <small class="muted">강의력, 학교</small></b></li></ul>
+      <div class="seg"><span>부업</span><div role="radiogroup" aria-label="부업">${Object.keys(SIDE).map(k=>`<button class="${(S.side||'none')===k&&sideOk(k)?'on':''}" role="radio" data-a="side" data-v="${k}"${sideOk(k)?'':' disabled'}>${SIDE[k].n}<small>${SIDE[k].need?`${DN[SIDE[k].need[0]]} ${SIDE[k].need[1]}`:'-'}</small></button>`).join('')}</div></div>
       <h4>이번 학기에 살 것 <small>여러 개 가능</small></h4>
       <div>${shop().map(k=>{const o=BUY[k],on=!!B[k],poor=S.money<o.price;return xr('buy',k,on,poor&&!on,o.n+(o.lock?' <i class="lk">해금</i>':''),buyFx(o)+(poor?' · 잔고 부족':''),`<b>${won(o.price)}</b>`);}).join('')||'<p class="muted fxn">이번 학기에는 살 수 있는 것이 없다.</p>'}</div></div>`;
     // 관계 접기: 2026-11-13 시안. 사람마다 행동 6개. 그림 에셋이 없는 선물·손절·청혼은 12×12 도트 SVG.
@@ -1496,7 +1533,8 @@ if(typeof document!=='undefined'){
     else if(a==='focus'){focus(v);save();}
     else if(a==='act'){S.act=S.act===v?null:v;save();}
     else if(a==='buy'){S.buy=S.buy||{};S.buy[v]=!S.buy[v];save();}
-    else if(a==='life'||a==='port'||a==='house'){S[a]=v;save();}
+    else if(a==='life'||a==='port'||a==='side'){S[a]=v;save();}
+    else if(a==='house'){S.hnext=v===S.house?null:v;save();}
     else if(a==='rtab')ui.rtab=v;
     else if(a==='theme'){const th=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=th;store.set('nobel.theme',th);}
     else if(a==='review'){ui.review=!ui.review;const sc=app.querySelector('.scroll');if(sc)sc.scrollTop=0;}

@@ -17,7 +17,7 @@ for(let n=0;n<N;n++){
       while(left<0){A.study-=5;left+=5;} while(left>0){A[k[Math.floor(Math.random()*3)]]+=5;left-=5;} }
     S.act=[null,...Object.keys(G.ACTS)][Math.floor(Math.random()*6)]; // 학업 토글: 5종 중 하나 또는 선택 안 함
     const r=a=>a[Math.floor(Math.random()*a.length)]; // 투자 접기: 생활·운용 하나씩, 구매는 아무거나
-    S.life=r(Object.keys(G.LIFE)); S.port=r(Object.keys(G.PORT)); S.buy=Object.fromEntries(Object.keys(G.BUY).map(k=>[k,Math.random()<.3]));
+    S.life=r(Object.keys(G.LIFE)); if(Math.random()<.15)S.hnext=r(['dorm','goshi','room','offi','jeonse','own','family']); S.side=r(['none','store','yt']); S.port=r(Object.keys(G.PORT)); S.buy=Object.fromEntries(Object.keys(G.BUY).map(k=>[k,Math.random()<.3]));
     for(let j=0;j<3;j++){const ws=[...(S.ppl||[]).map((_,i)=>i),'r',...(S.partner?['p']:[]),...(S.lab?['a']:[])], acts=['call','meal','listen','study','gift','notes','job','coauth','advice','rally','confess','propose']; G.relAct(ws[Math.floor(Math.random()*ws.length)],acts[Math.floor(Math.random()*acts.length)]);} // 관계 행동 아무거나
     G.advance();
     assert(Object.values(S.alloc).reduce((a,b)=>a+b,0)===100,'배분 합 100 seed '+n);
