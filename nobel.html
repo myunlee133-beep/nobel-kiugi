@@ -305,6 +305,19 @@ p{margin:0}
 .tbar .meter{height:14px;background:#ecdcc6;border-radius:7px}
 .tbar .meter i{border-radius:7px}
 .tbar b{font-size:21px;color:var(--accent);text-align:right}
+.boost .tbar{grid-template-columns:4.2em 1fr 4.4em}
+.tbar b em{font-style:normal;font-size:13px;margin-left:4px}
+.rec small.dd{font-weight:700;font-size:14px}
+.rec b{font-size:16px;line-height:1.5}
+.now{gap:8px;padding:16px}
+.now .chip{align-self:flex-start}
+.now p{font-size:19px;line-height:1.6;font-weight:700;word-break:keep-all}
+.now small{font-size:15px;color:var(--muted)}
+.dchips{display:flex;flex-wrap:wrap;gap:6px}
+.dchips span{font-size:15px;font-weight:700;padding:2px 10px;background:#fdecc4}
+.choice:disabled{opacity:.45;cursor:default}
+.tag.good{color:var(--good);border-color:var(--good)}
+@media (prefers-reduced-motion:no-preference){.now.pop{animation:recIn .5s ease-out}}
 .tsum{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);white-space:nowrap}
 .tsum::before,.tsum::after{content:'';flex:1;height:2px;background:var(--gold);opacity:.6}
 .exam{gap:12px;padding-top:6px;overflow-x:hidden} /* 공개 애니메이션이 살짝 커질 때 가로 스크롤바가 생기지 않게 */
@@ -358,14 +371,15 @@ function rollStats(r=Math.random){const w=STATS.map(()=>.5+r()), t=w.reduce((a,b
 // 고3: 3·6·9월 모의고사와 11월 수능. 연구력이 높을수록 기대 등급이 좋고(연구 96 → 1등급, 50 → 5등급 근처), 시험마다 ±1.5 흔들린다.
 const EXAMS=[['3월','모의고사'],['6월','모의고사'],['9월','모의고사'],['11월','수능']];
 const rollExam=(res,r=Math.random)=>EXAMS.map(()=>clamp(Math.round(9-res/12+r()*3-1.5),1,9));
-// 수능 등급이 좋으면 연구력, 나쁘면 매력과 경제력이 오른다. 5등급은 변화 없음.
-const examFx=g=>g<5?{res:(5-g)*3}:g>5?{cha:(g-5)*2,eco:(g-5)*2}:{};
+// 수능 보정: 고3 1년이 모든 능력치를 조금씩 올린다. 등급이 좋을수록 연구력·강의력이, 나쁠수록 매력·영업력이 더 오른다.
+// 1등급 연구+9 강의+5 매력+1 영업+1, 5등급 연구+5 강의+3 매력+1 영업+1, 9등급 연구+1 강의+1 매력+5 영업+5.
+const examFx=g=>({res:10-g,lec:Math.ceil((10-g)/2),cha:1+Math.max(0,g-5),eco:1+Math.max(0,g-5)});
 function talentOf(st){const v=STATS.map(k=>st[k]); if(Math.max(...v)-Math.min(...v)<=12)return'고른형';
   const top=STATS.reduce((a,k)=>st[k]>st[a]?k:a); return Object.keys(TALENT).find(t=>TALENT[t]===top);}
 const UG=[null,{n:'경남한빛대'},{n:'중앙과기대'},{n:'한국대'}];
 // 새 인생에서 고르는 것. 고등학교는 시작 능력치를 조금 옮기고, 희망 대학은 수능 등급으로 판정해(CUT 등급이면 60%, 한 등급마다 ±35%) 떨어지면 가장 낮은 곳에 간다. 안정 지원은 장학금.
 const HS=[{n:'일반고',d:'변화 없음',fx:{}},{n:'과학고',d:'연구+ 매력-',fx:{res:5,cha:-3}},{n:'외국어고',d:'강의+ 연구-',fx:{lec:5,res:-3}},{n:'특성화고',d:'경제+ 연구-',fx:{eco:5,res:-3}}];
-const CUT=[0,9,5,3], SCHOLAR=300; // 대학별 기준 수능 등급: 경남한빛대 누구나, 중앙과기대 5, 한국대 3
+const CUT=[0,9,5,3], SCHOLAR=300, SCHOLAR_GPA=200; // 대학별 기준 수능 등급: 경남한빛대 누구나, 중앙과기대 5, 한국대 3
 const admitP=(t,g)=>t===1?100:clamp(60+(CUT[t]-g)*35,3,95);
 const HOME=['서울','경기','강원','충청','전라','경상','제주']; // ponytail: 고향은 아직 글에만 나온다. 지역(집값, 가족과의 거리)이 들어오는 전체 버전에서 연결.
 const GRAD=[null,{n:'남도대',req:25},{n:'동해과기대',req:40},{n:'한국대',req:55}];
@@ -375,6 +389,9 @@ const ADV={
   스타형:{d:'이름만으로 심사가 부드러워진다',lock:1,gain:1,pay:1,sub:10,joy:0},
   은인형:{d:'밥은 먹었냐고 묻는다',lock:1,gain:1.15,pay:1,sub:5,joy:2}};
 const NAMES=['서윤','도현','지안','하준','유나','민재','수아','태오','채원','건우'];
+// NPC 성별: 여성 이름은 '연인' 그림, 남성 이름은 '라이벌' 그림과 짝을 맞춘다.
+const F_NAMES=['서윤','지안','유나','수아','채원','하린','예린','소율'], M_NAMES=['도현','하준','민재','태오','건우','시우','준서','은호'];
+const npc=g=>({name:pick(g==='f'?F_NAMES:M_NAMES),img:g==='f'?'연인':'라이벌'});
 const JOURNAL=[{n:'국내 학술지',req:28,pt:1},{n:'중견 국제 학술지',req:45,pt:2},{n:'상위 학술지',req:65,pt:4},{n:'최상위 학술지',req:85,pt:8}];
 const NEED=6, PHD_MIN=8, PHD_MAX=16;
 const ACT={
@@ -401,6 +418,59 @@ const MONTH={
    rest:['연구실에 안 갔다. 죄책감이 따라왔다.','하루 종일 잤다. 꿈에서 실험을 했다.','산책을 했다. 실험 생각을 했다.','휴가를 냈다. 메일은 계속 왔다.']},
  army:['훈련소에서 첫 주를 버텼다.','경계 근무를 서며 별을 셌다.','전공 책을 반입했다. 펼쳐 보지 않았다.','휴가를 나왔다. 세상이 빠르게 돌아간다.'],
  sick:['병원 침대에서 천장 무늬를 외웠다.','링거를 맞으며 논문을 읽으려다 잤다.','면회 온 친구가 귤을 두고 갔다.','퇴원 날짜가 미뤄졌다.']};
+// 수준·나이 맞춤 멘트. g 단계(ug 학부, gr 대학원), c 갈래, lv 수준(hi: 그 갈래 능력치 70 이상, lo: 35 미만, 없으면 누구나), a 나이 범위.
+// 갈래 → 능력치: 학업 연구력, 강의 강의력, 경제 영업력, 관계 매력, 휴식 행복. 수준에 맞는 멘트가 있으면 그쪽이 두 배로 자주 나온다.
+const POSB=new Set(['도서관 4층 창가 자리를 사수했다.','밤샘 공부 끝에 쪽지 시험 만점을 받았다.','과외 학생이 처음으로 숙제를 해 왔다.','설명하다 보니 내가 이해가 됐다.','통장 잔고를 보고 가계부를 시작했다.',
+  '동기들과 학교 앞에서 밤을 새웠다.','MT에서 처음 보는 선배와 친해졌다.','동아리방 소파가 내 방보다 편하다.','주말 내내 침대와 한 몸이 되었다.','한강에서 라면을 먹었다. 바람이 좋았다.','아무것도 안 했다. 그게 계획이었다.',
+  '학부생이 교수님인 줄 알고 인사했다.','연구비 정산 규정을 외웠다.','산학 미팅에서 명함만 열 장 받았다.','학회 뒤풀이에서 다른 연구실 사람들과 친해졌다.','연구실 사람들과 늦은 저녁을 먹었다.']),
+  NEGB=new Set(['전공 책을 펼쳤다. 3페이지에서 잠들었다.','실험이 또 안 됐다. 원인은 모른다.','조교 수업에서 학부생 질문에 답을 못 했다.','병원 침대에서 천장 무늬를 외웠다.','링거를 맞으며 논문을 읽으려다 잤다.','퇴원 날짜가 미뤄졌다.']);
+const tone=s=>POSB.has(s)?'+':NEGB.has(s)?'-':'0';
+const LINES=[], ML=(g,c,lv,a,arr)=>arr.forEach(s=>LINES.push({g,c,lv,a,s,t:lv==='hi'?'+':lv==='lo'?'-':typeof s==='string'?tone(s):'0'}));
+for(const g of['ug','gr'])for(const c in MONTH[g])ML(g,c,null,null,MONTH[g][c]);
+const YOUNG=[20,22], OLDUG=[23,40], GRY=[23,27], GRO=[28,45];
+ML('ug','rel','hi',YOUNG,[S=>`근처 ${S.gender==='남'?'여대생':'공대생'}들과 3대3 미팅을 나갔다. 즐거운 시간을 보냈다.`,'축제 주점에서 모르는 사람들이 자꾸 합석을 청했다.','과 대표 선거에 나가 보라는 말을 세 번 들었다.']);
+ML('ug','rel','hi',OLDUG,['복학했는데도 신입생들이 먼저 밥을 사 달라고 한다.','동아리 OB 모임 총무가 어느새 내가 되어 있었다.']);
+ML('ug','rel','lo',null,['단톡방에 말을 걸었다. 아무도 답하지 않았다.','조별 과제 조 편성에서 마지막까지 남았다.','MT에서 고기만 구웠다. 굽는 실력은 늘었다.']);
+ML('gr','rel','hi',GRY,['학회 뒤풀이에서 다른 연구실 사람들이 내 자리로 모였다.','친구의 친구를 소개받았다. 연락이 이어지고 있다.']);
+ML('gr','rel','hi',GRO,['16번째 소개팅을 했다. 좋은 시간이었지만 흥미가 생기지는 않았다.','친구 결혼식 사회를 또 부탁받았다. 올해만 네 번째다.']);
+ML('gr','rel','hi',null,['길을 가다 연예인급 외모의 이성에게 번호를 따일 뻔했다. 주지는 않았다.']);
+ML('ug','rel','hi',null,['길을 가다 연예인급 외모의 이성에게 번호를 따일 뻔했다. 주지는 않았다.']);
+ML('gr','rel','lo',GRY,['연구실 사람 말고는 이번 달에 대화한 사람이 없다.']);
+ML('gr','rel','lo',GRO,['친구들 결혼식 축의금만 늘어 간다. 내 차례는 기약이 없다.','부모님이 선 자리를 알아보기 시작했다.']);
+ML('gr','rel',null,GRO,['동기 단톡방이 육아 사진으로 채워지기 시작했다.']);
+ML('ug','study','hi',YOUNG,['교수님이 수업 끝나고 따로 불렀다. 대학원 이야기를 꺼냈다.','중간고사 최고점 공지에 내 학번이 올라갔다.','선배들이 족보 대신 내 필기를 빌려 간다.']);
+ML('ug','study','hi',OLDUG,['학부 연구생 자리를 제안받았다. 교수님이 먼저 메일을 보냈다.','졸업 논문 주제를 정했다. 지도교수가 고개를 끄덕였다.']);
+ML('ug','study','lo',null,['수업 시간에 무슨 말인지 하나도 모르겠다. 고개만 끄덕였다.','과제를 마감 1분 전에 냈다. 업로드가 59초 걸렸다.']);
+ML('gr','study','hi',GRY,['실험이 한 번에 됐다. 너무 쉽게 돼서 오히려 불안하다.','교수님이 내 아이디어로 과제 제안서를 쓰자고 했다.']);
+ML('gr','study','hi',GRO,['후배들이 실험 설계를 물으러 온다. 연구실의 기둥이 되었다.','해외 연구실에서 공동 연구를 하자는 메일이 왔다.','논문 심사 요청이 왔다. 이제 내가 2번 심사위원이다.']);
+ML('gr','study','lo',GRY,['세미나에서 질문을 받았다. 질문을 이해하지 못했다.']);
+ML('gr','study','lo',GRO,['같은 실험을 3년째 하고 있다. 결과도 3년째 같다.','후배가 먼저 논문을 냈다. 축하한다고 말했다.']);
+ML('ug','lec','hi',YOUNG,['발표가 끝나자 박수가 나왔다. 교수님도 쳤다.','과외 학생 어머니가 동생도 맡아 달라고 했다.']);
+ML('ug','lec','hi',OLDUG,['후배들 대상 전공 특강을 열었다. 강의실이 꽉 찼다.']);
+ML('ug','lec','lo',null,['발표 중에 머리가 하얘졌다. 슬라이드를 읽기만 했다.']);
+ML('gr','lec','hi',GRY,['조교 수업 강의평에 "교수님보다 낫다"는 말이 적혔다.']);
+ML('gr','lec','hi',GRO,['학부 강의 하나를 대신 맡아 달라는 부탁을 받았다.','인터넷 강의 업체에서 섭외 메일이 왔다.']);
+ML('gr','lec','lo',null,['조교 수업에서 학부생이 졸았다. 나도 졸렸다.']);
+ML('ug','eco','hi',null,['중고로 산 전공 책을 더 비싸게 되팔았다.','알바 사장님이 매니저 자리를 제안했다.']);
+ML('ug','eco','lo',null,['통장 잔고가 커피값보다 적었다.','알바비 계산을 잘못해서 내 돈으로 메꿨다.']);
+ML('gr','eco','hi',GRY,['연구비 정산을 하루 만에 끝냈다. 행정실에서 내 이름을 외웠다.']);
+ML('gr','eco','hi',GRO,['산학 미팅에서 기업 쪽이 먼저 후속 과제를 제안했다.','재테크 스터디에서 내가 강의를 하게 됐다.']);
+ML('gr','eco','lo',GRY,['연구비 영수증을 잃어버렸다. 내 돈으로 처리했다.']);
+ML('gr','eco','lo',GRO,['동기의 연봉 이야기에 조용히 계산기를 껐다.']);
+ML('ug','rest','hi',null,['친구들과 제주도 여행을 다녀왔다. 사진이 400장이다.','날씨가 좋아서 수업 대신 한강에 갔다. 후회는 없다.']);
+ML('ug','rest','lo',null,['아무것도 하기 싫다. 침대에서 천장만 봤다.']);
+ML('gr','rest','hi',GRY,['학회가 끝나고 하루 더 남아 관광을 했다. 교수님께는 비밀이다.']);
+ML('gr','rest','hi',GRO,['오랜만에 아무 생각 없이 푹 쉬었다. 실험 생각도 나지 않았다.']);
+ML('gr','rest','lo',null,['쉬는 날에도 메일 알림이 무섭다.','주말에 쉬었더니 월요일이 두 배로 무거웠다.']);
+const CK={study:'res',lec:'lec',eco:'eco',rel:'cha',rest:'joy'}, DN={res:'연구력',lec:'강의력',eco:'영업력',cha:'매력',joy:'행복'};
+function monthPool(k){ if(Array.isArray(MONTH[k]))return MONTH[k].map(s=>({s,t:tone(s)})); // 군 복무, 입원
+  const g=grad()?'gr':'ug', a=age(), v=S[CK[k]], lv=v>=70?'hi':v<35?'lo':'mid';
+  const ok=LINES.filter(x=>x.g===g&&x.c===k&&(!x.a||a>=x.a[0]&&a<=x.a[1])), tier=ok.filter(x=>x.lv===lv), base=ok.filter(x=>!x.lv);
+  return tier.concat(tier,base).map(x=>({s:typeof x.s==='function'?x.s(S):x.s,t:x.t}));}
+// 깎이는 값을 실을 나쁜 멘트가 없을 때 쓰는 줄
+const NEGF={res:'공부가 손에 잡히지 않는 한 주였다.',lec:'발표 준비를 미뤘다. 결국 대충 했다.',eco:'충동구매를 했다. 통장이 가벼워졌다.',cha:'요즘 사람들과 연락이 뜸하다.',joy:'이유 없이 기운이 빠지는 한 주였다.'};
+// 능력치 변화 한 줄: {res:2.4,joy:-1} → "연구력 +2.4, 행복 -1"
+const dtxt=d=>Object.entries(d||{}).filter(([,v])=>Math.abs(v)>=.1).map(([k,v])=>`${DN[k]} ${v>0?'+':''}${Math.round(v*10)/10}`).join(', ');
 // 사건: st 단계, cond 조건, t 글, c 선택지 {l, j:[능력치,요구], risk:성공확률, ok:[효과,글], no:[효과,글]}
 const EV=[
  {id:'team',st:'ug',t:()=>'조별 과제 발표가 사흘 남았다. 조원 둘은 단톡방에서 읽음 표시만 남기고 사라졌다.',c:[
@@ -470,22 +540,89 @@ const EV=[
  {id:'saju',st:'ug ms phd',t:()=>'친구를 따라 사주를 보러 갔다. 내 차례가 되었다.',c:[
    {l:'본다',ok:[{money:-5},S=>S.luck>=5?'"관운이 있어. 사람들이 알아서 도와줘." 복채가 아깝지 않았다.':S.luck<=-5?'한참 들여다보더니 말했다. "…복채는 안 받을게요."':'"노력한 만큼 나와요." 그건 나도 아는 말이었다.']},
    {l:'밖에서 기다린다',ok:[{},'과학을 하는 사람이니까. 조금 궁금하기는 했다.']}]},
+ {id:'startup',st:'ug ms phd',cond:S=>S.eco>=75,t:()=>'선배가 창업 팀에 들어오라고 한다. "숫자 보는 눈이 있잖아. 지분도 줄게."',c:[
+   {l:'투자금을 넣고 합류한다',j:['eco',80],ok:[{money:800,eco:2,hp:-10},'첫 투자 유치에 성공했다. 내 몫이 통장에 찍혔다.'],no:[{money:-300,joy:-6},'석 달 만에 법인을 정리했다. 명함만 남았다.']},
+   {l:'자문만 해 준다',ok:[{money:100,eco:1},'자문료로 100만 원을 받았다. 지분은 사양했다.']}]},
+ {id:'popular',st:'ug ms phd',cond:S=>S.cha>=75,t:()=>'행사 사회를 맡아 달라는 부탁이 줄을 잇는다. 모르는 후배들도 먼저 인사를 한다.',c:[
+   {l:'사회를 맡는다',j:['cha',78],ok:[{cha:1,lec:2,joy:6},'행사가 끝나고 단톡방이 내 이야기로 가득했다.'],no:[{joy:-4},'준비한 농담이 전부 빗나갔다. 박수는 예의였다.']},
+   {l:'정중히 거절한다',ok:[{res:1},'그 시간에 도서관에 갔다. 인기는 잠깐이다.']}]},
  {id:'scoop',st:'phd',cond:S=>S.prog>=30,t:S=>`${S.rival.name}의 연구실에서 내 주제와 거의 같은 논문이 먼저 나왔다.`,c:[
    {l:'방향을 튼다',ok:[{prog:-15,res:3},'석 달 치를 버렸다. 새 주제가 조금 더 낫다고 믿기로 했다.']},
    {l:'속도전으로 간다',ok:[{prog:-5,hp:-12},'"동시에 독립적으로 수행된 연구"라는 문장을 넣었다.']}]}
 ];
+const MINI=[
+ {id:'m_night',g:'ug',c:'study',t:()=>'중간고사 전날, 동기가 같이 밤새 공부하자고 한다.',c:[
+   {l:'같이 밤을 샌다',ok:[{res:2,hp:-6},'새벽 네 시, 둘 다 같은 문제에서 막혔다. 그래도 많이 봤다.']},
+   {l:'내 방식대로 일찍 잔다',need:['res',60],ok:[{res:3,joy:1},'푹 자고 일어나니 머리가 맑았다. 시험이 쉬웠다.']},
+   {l:'족보를 구해 온다',need:['cha',50],ok:[{res:1,cha:2},'선배가 족보와 함께 시험 팁까지 알려 주었다.']}]},
+ {id:'m_present',g:'ug',c:'lec',t:()=>'조별 발표를 누가 맡을지 정해야 한다. 다들 눈을 피한다.',c:[
+   {l:'내가 발표한다',need:['lec',55],ok:[{lec:3,cha:1},'질문까지 깔끔하게 받아 냈다. 조원들이 박수를 쳤다.']},
+   {l:'자료만 만든다',ok:[{lec:1,res:1},'슬라이드가 예쁘다는 칭찬을 들었다.']},
+   {l:'가위바위보로 정하자고 한다',ok:[{joy:2},'졌다. 그래도 웃으면서 끝냈다.']}]},
+ {id:'m_gig',g:'ug',c:'eco',t:()=>'단기 알바 공고가 떴다. 하루 일당이 꽤 세다.',c:[
+   {l:'바로 지원한다',ok:[{money:40,eco:2,hp:-5},'하루 종일 박스를 날랐다. 일당 40만 원.']},
+   {l:'사장님과 일당을 흥정한다',need:['eco',60],ok:[{money:70,eco:3},'두 시간 만에 일당을 올려 받았다. 70만 원.']},
+   {l:'그 시간에 공부한다',ok:[{res:1,joy:1},'통장은 그대로지만 마음은 편하다.']}]},
+ {id:'m_senior',g:'ug',c:'rel',t:()=>'동아리 선배가 갑자기 밥을 사 주겠다고 한다.',c:[
+   {l:'따라간다',ok:[{cha:2,joy:2},'고기를 얻어먹었다. 다음엔 내가 후배에게 사야겠다.']},
+   {l:'자리를 띄운다',need:['cha',60],ok:[{cha:3,joy:3},'2차까지 이어졌다. 선배가 동아리 임원을 해 보라고 했다.']},
+   {l:'과제가 있다고 한다',ok:[{res:1},'과제는 했다. 고기 생각이 났다.']}]},
+ {id:'m_weekend',g:'ug',c:'rest',t:()=>'오랜만에 아무 일정도 없는 주말이다.',c:[
+   {l:'푹 잔다',ok:[{hp:10,joy:3},'열네 시간을 잤다. 몸이 가볍다.']},
+   {l:'혼자 여행을 떠난다',need:['eco',45],ok:[{money:-30,joy:6,cha:1},'바다를 보고 왔다. 30만 원이 아깝지 않았다.']},
+   {l:'그래도 공부한다',ok:[{res:2},'도서관이 텅 비어 있었다. 집중이 잘 됐다.']}]},
+ {id:'m_lab',g:'gr',c:'study',t:()=>'랩 미팅에서 교수님이 내 데이터를 보고 고개를 갸웃한다.',c:[
+   {l:'그 자리에서 설명한다',need:['res',65],ok:[{res:3,adv:1},'설명이 끝나자 교수님이 고개를 끄덕였다.']},
+   {l:'다시 해 오겠다고 한다',ok:[{res:2,hp:-5},'일주일 내내 다시 돌렸다. 결과는 조금 나아졌다.']},
+   {l:'선배에게 도움을 청한다',need:['cha',50],ok:[{res:2,cha:1},'선배가 놓친 변수를 짚어 주었다.']}]},
+ {id:'m_appeal',g:'gr',c:'lec',t:()=>'학부생이 조교실에 찾아와 시험 점수 이의 신청을 한다.',c:[
+   {l:'차근차근 설명한다',need:['lec',55],ok:[{lec:3},'학생이 납득하고 돌아갔다. 고맙다는 메일까지 왔다.']},
+   {l:'교수님께 넘긴다',ok:[{joy:1},'교수님이 다시 나에게 넘겼다.']},
+   {l:'부분 점수를 준다',ok:[{cha:2,lec:1},'강의평에 "조교님 천사"라는 말이 적혔다.']}]},
+ {id:'m_receipt',g:'gr',c:'eco',t:()=>'연구비 정산 마감이 내일이다. 영수증 세 장이 비어 있다.',c:[
+   {l:'밤새 맞춰 본다',ok:[{eco:2,hp:-6},'새벽에 카드 내역에서 찾아냈다.']},
+   {l:'행정실과 협상한다',need:['eco',60],ok:[{eco:3,joy:2},'증빙을 대신할 서류로 해결했다. 행정실과 친해졌다.']},
+   {l:'솔직하게 말한다',ok:[{eco:1,adv:-1},'교수님께 한 소리 들었다. 다음부터는 꼼꼼히 하기로 했다.']}]},
+ {id:'m_collab',g:'gr',c:'rel',t:()=>'다른 연구실 동기가 공동 연구를 해 보자고 한다.',c:[
+   {l:'좋다고 한다',ok:[{cha:2,res:1},'첫 회의가 잡혔다. 생각보다 잘 맞는다.']},
+   {l:'역할을 정리해서 제안한다',need:['eco',55],ok:[{eco:2,res:2},'제1저자 순서까지 미리 정했다. 깔끔하다.']},
+   {l:'지금은 바쁘다고 한다',ok:[{joy:1},'아쉬워하는 눈치였다.']}]},
+ {id:'m_vacation',g:'gr',c:'rest',t:()=>'휴가 신청서를 냈다. 교수님 답장이 아직 없다.',c:[
+   {l:'그냥 떠난다',need:['cha',55],ok:[{joy:6,hp:10},'돌아와서 웃으며 인사했더니 교수님도 웃었다.']},
+   {l:'답장을 기다린다',ok:[{res:1,joy:1},'답장은 휴가 예정일 다음 날에 왔다.']},
+   {l:'휴가를 취소한다',ok:[{res:2},'실험은 진도가 나갔다.']}]}];
+const evById=id=>EV.find(x=>x.id===id)||MINI.find(x=>x.id===id);
 const REJECT=['"흥미롭지만 본 학술지의 범위에 맞지 않습니다."','"저자들은 2번 심사위원의 최근 논문 다섯 편을 인용할 필요가 있다."','"참신성이 부족하다." 심사평은 그 한 줄이었다.','넉 달을 기다렸다. 편집자 선에서 반려되었다.'];
 const TITLES=[
  ['첫 논문',S=>S.papers.length>=1],['논문 공장',S=>S.papers.length>=4],
  ['과외의 신',S=>S.lec>=60&&S.stage!=='phd'],['마이너스 인생',S=>S.money<=-2000],
- ['만년 박사과정',S=>S.stage==='phd'&&S.ss>=13],['강철 체력',S=>S.t>=12&&S.hosp===0&&S.hp>=90]];
+ ['만년 박사과정',S=>S.stage==='phd'&&S.ss>=13],['강철 체력',S=>S.t>=12&&S.hosp===0&&S.hp>=90],
+ ['연구실의 기둥',S=>S.res>=75],['명강사',S=>S.lec>=75],['수완가',S=>S.eco>=75],['인기인',S=>S.cha>=75]];
 
 // ---------- 엔진 ----------
 let S=null;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+// 조사: '이(가)' 같은 자리표시를 앞 글자 받침에 맞춰 고른다. 따옴표나 괄호 뒤에 붙어도 그 앞 한글을 본다.
+const JOSA={'이(가)':['이','가'],'와(과)':['과','와'],'을(를)':['을','를'],'은(는)':['은','는']};
+const josa=s=>String(s).replace(/([가-힣])(['"’”)]*)(이\(가\)|와\(과\)|을\(를\)|은\(는\))/g,(_,c,q,j)=>c+q+JOSA[j][(c.charCodeAt(0)-0xAC00)%28?0:1]);
+// 첫 문장과 나머지. 문장을 닫는 따옴표까지 첫 문장에 넣고, 따옴표 안의 마침표에서는 자르지 않는다.
+function split1(t){for(const m of t.matchAll(/[.?!…]["”']?(?=\s)/g)){const e=m.index+m[0].length, h=t.slice(0,e);
+  if((h.match(/"/g)||[]).length%2===0)return[h,t.slice(e).trim()];} return[t,''];}
 function rnd(){ // 저장되는 씨앗에서 뽑으므로 새로고침해도 결과가 같다
   let t=S.seed+=0x6D2B79F5; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return((t^t>>>14)>>>0)/4294967296;}
 const pick=a=>a[Math.floor(rnd()*a.length)];
+// 성장: v는 그 학기 기본 성장량.
+// 집중한 능력치(v 3 이상)는 현재값에 비례해 커지고(눈덩이, 30일 때 ×0.9, 70일 때 ×1.3), 학기마다 0.5~1.3배로 흔들린다.
+// 잠재력 폭발: 집중한 능력치가 60 미만이면 10%, 그 이상이면 4% 확률로 그 학기 성장이 2.5배. 낮게 시작해도 크게 뛸 수 있다(개천에서 용).
+// 집중하지 않은 능력치(v 3 미만)는 비례 없이 조금만 오른다. 높은 능력치라도 손을 놓으면 성장이 더디다.
+// 75를 넘는 몫은 30%만 남는다. 75 이상은 '벽 돌파'를 굴린다: 75에서 60%, 85에서 30%, 95에서 10%(최저 8%). 성공하면 v×0.45, 실패해도 v×0.03은 쌓인다.
+const WALL=75;
+function grow(k,v,mul=1){ const s=S[k];
+  if(v<3){ S[k]=clamp(s+v*.9*mul*(s>=WALL?.3:1),0,100); return; }
+  let f=.5+rnd()*.8; if(rnd()<(s<60?.1:.04)){f*=2.5;(S.spark||(S.spark=[])).push(k);}
+  if(s<WALL){ let n=s+v*.9*(.7+s/100)*mul*f; if(n>WALL)n=WALL+(n-WALL)*.3; S[k]=clamp(n,0,100); return; }
+  if(rnd()<Math.max(.08,.6-(s-WALL)*.03)){S[k]=clamp(s+v*.45,0,100);(S.brk||(S.brk=[])).push(k);}
+  else S[k]=clamp(s+v*.03,0,100); }
 const label=p=>p<20?'매우 낮음':p<40?'낮음':p<60?'반반':p<80?'높음':'매우 높음';
 const won=v=>(v<0?'-':'')+Math.abs(Math.round(v)).toLocaleString('ko-KR')+'만 원';
 const age=()=>20+Math.floor(S.t/2);
@@ -494,7 +631,7 @@ const pts=()=>S.papers.reduce((a,p)=>a+p.pt,0);
 function chance(stat,req,bonus){return clamp(Math.round(50+(S[stat]-req)*2+(bonus||0)-(S.hp<25?10:0)+(stat==='cha'&&ugf()&&S.focus==='rel'?15:0)),5,95);}
 function roll(p){return rnd()*100<clamp(p+S.luck,5,95);}
 let LT=null; // 카드 처리 중 쓰는 기록은 방금 끝난 학기에 붙인다
-function log(s,sub){const t=LT??S.t;S.log.push({a:20+(t>>1),t,s,sub});}
+function log(s,sub){const t=LT??S.t;S.log.push({a:20+(t>>1),t,s:josa(s),sub:sub&&josa(sub)});}
 function fx(e,why){ if(!e)return; for(const k in e){const v=e[k]; // why: 돈이 오간 까닭. 결산창 내역에 쌓인다.
   if(STATS.includes(k))S[k]=clamp(S[k]+v,0,100);
   else if(k==='hp')S.hp=clamp(S.hp+v,0,S.hpMax);
@@ -504,13 +641,13 @@ function fx(e,why){ if(!e)return; for(const k in e){const v=e[k]; // why: 돈이
   else if(k==='adv'){if(S.lab)S.lab.fav=clamp(S.lab.fav+v,0,5);}
   else if(k==='rival')S.rival.fav=clamp(S.rival.fav+v,0,5);
   else if(k==='pfav'){if(S.partner)S.partner.fav=clamp(S.partner.fav+v,0,5);}
-  else if(k==='partner'){ if(v>0&&!S.partner){S.partner={name:pick(NAMES.filter(n=>n!==S.rival.name)),fav:2};log(S.partner.name+'와(과) 사귀기 시작');}
+  else if(k==='partner'){ if(v>0&&!S.partner){const p=npc(S.gender==='남'?'f':'m'); S.partner={name:p.name===S.rival.name?pick(S.gender==='남'?F_NAMES:M_NAMES):p.name,img:p.img,fav:2};log(S.partner.name+'와(과) 사귀기 시작');}
                           if(v<0&&S.partner){log(S.partner.name+'와(과) 이별');S.partner=null;} }
   else if(k==='flag')S.flags[v]=1;
   else if(k==='title')title(v);
 }}
 function title(n){if(!S.titles.includes(n)){S.titles.push(n);dogam('titles',n);log(`칭호 '${n}'을(를) 얻었다.`);}}
-function msg(title,body,stamp){S.q.push({k:'msg',title,body,stamp});}
+function msg(title,body,stamp){S.q.push({k:'msg',title,body:josa(body),stamp});}
 // 의무: 학업은 이 아래로 못 내린다 (예전 잠긴 슬롯). 착취형 교수는 두 칸.
 const minStudy=()=>S.stage!=='ug'&&S.lab&&ADV[S.lab.type].lock===2?50:25;
 function fixAlloc(){ if(!S.alloc)S.alloc={study:40,lec:15,eco:15,rel:15,rest:15};
@@ -523,11 +660,11 @@ const hpm=p=>p<=25?p/25:1+(p-25)/25*1.25;
 // a: 그 학기의 시간 배분(달별 멘트·학점·연애 판정이 읽는다). 인간관계는 매력 판정(소개팅 등)에 +15, 대외활동은 공모전·학회 결과에 +15(ACTS 참고).
 // ponytail: 초점 체계에는 휴식이 없어 학부생의 체력은 초점으로 닳지 않는다(사건으로만 닳는다). 대학원생은 아직 능력치 초점(FOCUS) 그대로.
 const UGF={
-  rel:{n:'인간관계',d:'매력↑ 영업력↑ 행복↑ 친밀도↑ · 연구력↓ 재산↓',ico:'매력',g:{cha:5,eco:3,res:-2},joy:6,money:-100,why:'모임',pp:6,meet:25,a:{study:25,lec:10,eco:10,rel:45,rest:10}},
-  study:{n:'학업',d:'연구력↑ · 매력↓ 영업력↓ 행복↓ 친밀도↓',ico:'성과',g:{res:6,cha:-2,eco:-2},joy:-4,pp:-6,meet:5,a:{study:65,lec:10,eco:5,rel:5,rest:15}},
+  rel:{n:'인간관계',d:'매력↑ 영업력↑ 행복↑ 친밀도↑ · 연구력↓ 재산↓',ico:'매력',g:{cha:5,eco:3,res:-1},joy:6,money:-100,why:'모임',pp:6,meet:25,a:{study:25,lec:10,eco:10,rel:45,rest:10}},
+  study:{n:'학업',d:'연구력↑ · 매력↓ 영업력↓ 행복↓ 친밀도↓',ico:'성과',g:{res:6,cha:-1,eco:-1},joy:-2,pp:-3,meet:5,a:{study:65,lec:10,eco:5,rel:5,rest:15}},
   out:{n:'대외활동',d:'강의력↑ 영업력↑ · 새 인연, 공모전·학회 확률↑',ico:'발표',g:{lec:5,eco:3},pp:-1,meet:60,a:{study:30,lec:35,eco:10,rel:15,rest:10}},
   tutor:{n:'과외',d:'강의력↑ 영업력↑ 재산↑',ico:'강의',g:{lec:5,eco:3},money:400,why:'과외',pp:-1,meet:15,a:{study:30,lec:45,eco:5,rel:10,rest:10}},
-  job:{n:'알바',d:'영업력↑ 매력↑ 재산↑ · 연구력↓',ico:'코인',g:{eco:5,cha:3,res:-2},money:520,why:'아르바이트',pp:-1,meet:15,a:{study:25,lec:5,eco:50,rel:10,rest:10}}};
+  job:{n:'알바',d:'영업력↑ 매력↑ 재산↑ · 연구력↓',ico:'코인',g:{eco:5,cha:3,res:-1},money:520,why:'아르바이트',pp:-1,meet:15,a:{study:25,lec:5,eco:50,rel:10,rest:10}}};
 const ugf=()=>S.stage==='ug'&&UGF[S.focus];
 const FOCUS={res:['study',60],lec:['lec',40],eco:['eco',40],cha:['rel',40],joy:['rest',40]};
 function focus(f){ if(UGF[f]){S.focus=f;S.alloc={...UGF[f].a};return;}
@@ -551,7 +688,7 @@ function newLife(o){
   S.ugTier=rnd()*100<admitP(hope,S.exam[3])+S.luck?hope:1;
   S.exempt=S.gender==='남'&&rnd()<.05; if(S.gender!=='남')S.armyDone=true;
   S.money=[0,100,1000][S.family]+(hope===1?SCHOLAR:0);
-  S.rival={name:pick(NAMES),fav:2}; S.led={inc:0,exp:0};
+  S.rival={...npc(rnd()<.5?'f':'m'),fav:2}; S.led={inc:0,exp:0};
   focus('study');
   log(`${UG[S.ugTier].n} ${S.field}과 입학`);
   const background=[
@@ -574,13 +711,14 @@ function newLife(o){
 }
 // 진행 화면이 한 달씩 꺼낸다. 다 꺼낸 다음 한 번 더 부르면 학기가 끝난다.
 function reveal(){ const P=S.pend; if(!P)return; if(!P.length){S.pend=null;save();return;}
-  const m=P.shift(), t=S.t-1; S.log.push({a:20+(t>>1),t,mo:m.mo,w:m.w,s:m.s,month:1}); if(m.ev)S.q.unshift({k:'event',id:m.ev,mo:m.mo,w:m.w}); save();}
+  const m=P.shift(), t=S.t-1; S.log.push({a:20+(t>>1),t,mo:m.mo,w:m.w,s:m.s,month:1,d:m.d,tone:m.t}); S.mid=S.mid||{}; for(const k in m.d||{})S.mid[k]=(S.mid[k]||0)+m.d[k]; if(m.ev)S.q.unshift({k:'event',id:m.ev,mo:m.mo,w:m.w}); save();}
 const stg=()=>S.army>0?'군 복무':S.stage==='ug'?`${Math.floor(S.ss/2)+1}학년`:`${S.stage==='ms'?'석사':'박사'} ${Math.floor(S.ss/2)+1}년 차`;
 function snap(){return{res:S.res,lec:S.lec,eco:S.eco,cha:S.cha,joy:S.joy,money:S.money,home:S.home,n:S.papers.length,f:{lab:S.lab?S.lab.fav:null,rival:S.rival.fav,partner:S.partner?S.partner.fav:null},p:Object.fromEntries((S.ppl||[]).map(x=>[x.n,x.v]))};}
 
+const payMul=why=>why==='과외'||why==='수업 조교'?.5+S.lec/100:why==='아르바이트'?.5+S.eco/100:1;
 function advance(){
   if(S.end||S.q.length||S.pend)return; fixAlloc();
-  const b=snap(), prog0=S.prog, ti0=S.titles.length, sem=S.t%2, semName=`${stg()} ${S.t%2+1}학기`; if(!S.led)S.led={inc:0,exp:0}; S.used=[];
+  const b=snap(), prog0=S.prog, ti0=S.titles.length, sem=S.t%2, semName=`${stg()} ${S.t%2+1}학기`; if(!S.led)S.led={inc:0,exp:0}; S.used=[]; S.brk=[]; S.spark=[]; S.mid={};
   for(const k in S.buy||{}){const o=BUY[k]; if(S.buy[k]&&o.can()&&S.money>=o.price){fx({money:-o.price},o.n);o.go();}} S.buy={};
   const adv=S.lab?ADV[S.lab.type]:null, joyMul=.85+S.joy/100*.3;
   let sick=false; const inArmy=S.army>0;
@@ -590,18 +728,18 @@ function advance(){
     msg('입원','응급실 천장을 보며 한 학기를 보냈다. 병원비 200만 원이 나갔다.');
   }else{
     const F=ugf();
-    if(F){ for(const k of STATS){const v=F.g[k]??1; S[k]=clamp(S[k]+(v>0?v*(1-S[k]/110)*joyMul:v),0,100);} S.used=[...STATS];
-      S.joy=clamp(S.joy+(F.joy??1),0,100); if(F.money)fx({money:F.money},F.why); }
-    else for(const[id,p]of blocks()){const a=ACT[id], m=eff(p), lin=p/25;
-      for(const k in a.g||{}){S[k]=clamp(S[k]+a.g[k]*(1-S[k]/110)*joyMul*m*(k==='res'&&adv?adv.gain:1),0,100); if(!S.used.includes(k))S.used.push(k);}
+    if(F){ for(const k of STATS){const v=F.g[k]??1; if(v>0)grow(k,v,joyMul); else S[k]=clamp(S[k]+v,0,100);} S.used=[...STATS];
+      S.joy=clamp(S.joy+(F.joy??1),0,100); if(F.money)fx({money:Math.round(F.money*(F.money>0?payMul(F.why):1))},F.why); }
+    else{ const gain={}; for(const[id,p]of blocks()){const a=ACT[id], m=eff(p), lin=p/25;
+      for(const k in a.g||{}){gain[k]=(gain[k]||0)+a.g[k]*1.5*m*(k==='res'&&adv?adv.gain:1); if(!S.used.includes(k))S.used.push(k);}
       if(a.prog&&grad())S.prog+=(a.prog[0]+S.res*a.prog[1])*m*(adv.prog||1);
-      S.hp+=a.hp<0?a.hp*hpm(p):a.hp*lin; S.joy=clamp(S.joy+(a.joy||0)*lin,0,100); if(a.money)fx({money:Math.round(a.money*lin)},AN[id]);
-    }
+      S.hp+=a.hp<0?a.hp*hpm(p):a.hp*lin; S.joy=clamp(S.joy+(a.joy||0)*lin,0,100); if(a.money)fx({money:Math.round(a.money*lin*payMul(AN[id]))},AN[id]);
+    } for(const k in gain)grow(k,gain[k],joyMul); }
     // 연애: 관계 비중이 연인 호감을 지키고, 새 인연을 만든다 (예전 '연애' 칸)
     const rel=S.alloc.rel;
     // 주변 사람: 관계 비중만큼 가까워지고 새 사람을 만난다. ponytail: 결산창에 보여 주는 값. 사건·판정에 쓰려면 여기 v를 읽는다.
     S.ppl=S.ppl||[]; for(const x of S.ppl)x.v=clamp(x.v+Math.round((F?F.pp:rel/4-4)+rnd()*6),0,100);
-    if(S.ppl.length<6&&rnd()*100<(F?F.meet:20+rel*2))S.ppl.push({n:pick('김이박최정')+pick(NAMES),role:pick(grad()?['연구실 동료','학회 지인']:['학과 친구','동아리 선배','스터디 조원']),img:pick(['연인','라이벌']),v:35+Math.round(rnd()*25)});
+    if(S.ppl.length<6&&rnd()*100<(F?F.meet:20+rel*2)){const q=npc(rnd()<.5?'f':'m'); S.ppl.push({n:pick('김이박최정')+q.name,role:pick(grad()?['연구실 동료','학회 지인']:['학과 친구','동아리 선배','스터디 조원']),img:q.img,v:35+Math.round(rnd()*25)});}
     if(rel>=20){ if(S.partner)S.partner.fav=clamp(S.partner.fav+1,0,5); else if(rnd()*100<(S.cha*.6+S.luck)*rel/40)fx({partner:1}); }
     else if(S.partner&&rnd()<.25){S.partner.fav--; if(S.partner.fav<=0){fx({partner:-1,joy:-12});msg('이별','연락이 뜸해지더니 끝났다. 바빴다는 말은 하지 않기로 했다.');}}
   }
@@ -610,33 +748,45 @@ function advance(){
     else{fx({money:Math.round((S.stage==='ms'?600:960)*adv.pay+(S.lab.pres===3?120:0))},'인건비');fx({money:-760+RENT},'생활비');}
     if(!S.home)fx({money:-RENT},'월세');
     const L=LIFE[S.life||'mid']; if(L.cost)fx({money:-L.cost},L.cost>0?'플렉스':'가성비 절약'); S.joy=clamp(S.joy+L.joy,0,100); }
-  if(S.money>0){const g=Math.round(S.money*yieldPct(S.port||'dep')/100); if(g)fx({money:g},'투자');}
+  if(S.money>0){let g=S.money*yieldPct(S.port||'dep')/100; if(g>0)g*=.6+S.eco/125; g=Math.round(g); if(g)fx({money:g},'투자');}
   // 회복, 감소, 행복
   S.hp=clamp(S.hp+(sick?0:28+(S.home?5:0)),-50,S.hpMax);
-  for(const k of STATS)if(!S.used.includes(k)&&!inArmy)S[k]=clamp(S[k]-(.4+S[k]*.012)*(S.joy<30?1.5:1),0,100);
-  S.joy=clamp(S.joy+(50-S.joy)*.05+(adv?adv.joy:0)+(S.hp<25?-4:0)+(S.money<-1500?-3:0)+(S.partner?2:0)+(!inArmy&&!sick&&S.alloc.rel+S.alloc.rest===0?-5:0),0,100);
+  for(const k of STATS)if(!S.used.includes(k)&&!inArmy)S[k]=clamp(S[k]-(.2+S[k]*.006)*(S.joy<30?1.5:1),0,100); // 안 쓰는 능력치는 아주 조금씩 녹슨다
+  S.joy=clamp(S.joy+(50-S.joy)*.03+(adv?adv.joy:0)+(S.hp<25?-4:0)+(S.money<-1500?-3:0)+(S.partner?2:0)+(!inArmy&&!sick&&S.alloc.rel+S.alloc.rest===0?-5:0),0,100);
   S.prog=Math.min(S.prog,100);
   // 카드 쌓기
   if(grad()&&S.prog>=100)S.q.push({k:'submit'});
   // 달별 멘트. 사건이 있으면 한 달을 차지하고, 진행 화면이 그 달에서 멈춰 카드를 띄운다.
   const MO=sem?[9,10,11,12]:[3,4,5,6], P=inArmy?{army:1}:sick?{sick:1}:S.alloc, bank=MONTH[grad()?'gr':'ug'];
   const seen=[], lines=[...Array(8)].map((_,i)=>{const keys=Object.keys(P).filter(k=>P[k]>0); let r=rnd()*keys.reduce((a,k)=>a+P[k],0), k=keys[0];
-    for(const x of keys){if((r-=P[x])<0){k=x;break;}} const all=MONTH[k]||bank[k], fresh=all.filter(x=>!seen.includes(x)), s=fresh.length?pick(fresh):'같은 하루가 반복됐다. 그래도 조금은 나아졌다.';
-    seen.push(s); return{mo:MO[i>>1],w:i*2+2,s};}); // 16주를 2주씩 여덟 줄
+    for(const x of keys){if((r-=P[x])<0){k=x;break;}} const all=monthPool(k), fresh=all.filter(x=>!seen.includes(x.s)), o=fresh.length?pick(fresh):{s:'같은 하루가 반복됐다. 그래도 조금은 나아졌다.',t:'0'};
+    seen.push(o.s); return{mo:MO[i>>1],w:i*2+2,s:o.s,t:o.t,k};}); // 16주를 2주씩 여덟 줄
   if(!inArmy&&!sick&&rnd()<.55){
     const pool=EV.filter(e=>e.st.split(' ').includes(S.stage)&&!S.flags['e_'+e.id]&&(!e.cond||e.cond(S)));
-    if(pool.length){const e=pick(pool),i=Math.floor(rnd()*8),t=e.t(S),cut=t.search(/[.?!]\s/);S.flags['e_'+e.id]=1;
-      lines[i]={mo:lines[i].mo,w:lines[i].w,s:cut<0?t:t.slice(0,cut+1),ev:e.id};}
+    if(pool.length){const e=pick(pool),i=Math.floor(rnd()*8),t=josa(e.t(S));S.flags['e_'+e.id]=1;
+      lines[i]={mo:lines[i].mo,w:lines[i].w,s:split1(t)[0],ev:e.id};}
   }
+  if(!inArmy&&!sick){ const g=grad()?'gr':'ug', used=new Set();
+    for(let j=rnd()<.5?2:1;j>0;j--){ const free=lines.map((_,i)=>i).filter(i=>!lines[i].ev); if(free.length<3)break; const i=pick(free), L=lines[i];
+      let pool=MINI.filter(m=>m.g===g&&!used.has(m.id)&&m.c===L.k); if(!pool.length)pool=MINI.filter(m=>m.g===g&&!used.has(m.id)); if(!pool.length)break;
+      const m=pick(pool); used.add(m.id); lines[i]={mo:L.mo,w:L.w,s:split1(josa(m.t(S)))[0],ev:m.id,k:L.k}; } }
+  // 이번 학기 능력치 변화를 달별 멘트에 나눠 싣는다. 갈래가 맞는 줄(학업 → 연구력 등)에 먼저, 없으면 모든 줄에 고르게.
+  { const plain=lines.filter(l=>!l.ev), KC={res:'study',lec:'lec',eco:'eco',cha:'rel',joy:'rest'};
+    for(const k of[...STATS,'joy'].sort((x,y)=>(S[x]-b[x])-(S[y]-b[y]))){const d=S[k]-b[k]; if(Math.abs(d)<.05||!plain.length)continue; const okT=d>0?['+','0']:['-','0']; // 감소부터 싣는다
+      let tg=plain.filter(l=>okT.includes(l.t)).sort((x,y)=>(CK[y.k]===k)-(CK[x.k]===k)||(x.t===okT[0]?-1:0)-(y.t===okT[0]?-1:0)||rnd()-.5);
+      if(!tg.length&&d<0){const l=plain.find(l=>l.t!=='+'&&!l.d)||plain.find(l=>!l.d)||plain[plain.length-1]; l.s=NEGF[k]; l.t='-'; l.k=KC[k]; tg=[l];}
+      if(!tg.length)tg=plain;
+      const n=Math.max(1,Math.min(tg.length,Math.floor(Math.abs(d)))); for(const l of tg.slice(0,n))(l.d||(l.d={}))[k]=(l.d[k]||0)+d/n;} }
   S.pend=lines;
   if(S.joy<15&&!S.q.some(c=>c.k==='burnout'))S.q.push({k:'burnout'});
   S.t++; if(!inArmy)S.ss++;
   for(const[n,f]of TITLES)if(f(S))title(n);
   // 학점. ponytail: 결산창에 보여 주기만 하는 값. 장학금·대학원 입시에 쓰려면 여기서 S.gpa에 쌓는다.
-  const gpa=S.stage==='ug'&&!inArmy&&!sick?Math.round(clamp(2.3+S.res/45+(S.alloc.study>=40?.4:0)+(S.joy>60?.1:0)-(S.hp<25?.4:0)+rnd()*.4-.2,1.5,4.5)*10)/10:null;
+  const gk=S.res*.7+S.lec*.3, gpa=S.stage==='ug'&&!inArmy&&!sick?Math.round(clamp(1.8+gk/40+(S.alloc.study>=40?.3:0)+(S.joy>60?.1:0)-(S.hp<25?.4:0)+rnd()*.4-.2,1.5,4.5)*10)/10:null;
+  if(gpa!=null&&gpa>=4)fx({money:SCHOLAR_GPA},'성적 장학금'); // 학점 4.0 이상이면 다음 학기 성적 장학금
   if(gpa!=null){S.gsum=(S.gsum||0)+gpa;S.gn=(S.gn||0)+1;}
   // 학기 결산창: 이번 학기 사건을 다 치른 뒤, 다음 단계 카드(진학·입대 등) 앞에 뜬다. 바뀐 값은 볼 때 계산한다.
-  S.q.push({k:'settle',t:S.t-1,name:semName,b,prog0,n0:b.n,ti0,p0:S.partner&&S.partner.name,gpa,out:inArmy||sick?null:achieve()});
+  S.q.push({k:'settle',t:S.t-1,name:semName,b,prog0,n0:b.n,ti0,p0:S.partner&&S.partner.name,gpa,brk:[...new Set(S.brk)],spark:[...new Set(S.spark)],out:inArmy||sick?null:achieve()});
   transitions(); save();
 }
 // 학업 토글 5종(하나만 고른다). 초점 보너스 +15: 학업(대학원은 연구) 초점이면 어학·논문·랩 인턴, 대외활동 초점이면 학회·공모전이 잘 된다.
@@ -700,8 +850,9 @@ function view(){
   const T=(l,p)=>({l,tag:p==null?'':'확률 '+label(p)});
   if(c.k==='msg')return{title:c.title,body:c.body,stamp:c.stamp,ch:[T('확인')]};
   if(c.k==='settle')return{title:c.name+' 결산',body:'',ch:[T('확인')]};
-  if(c.k==='event'){const e=EV.find(x=>x.id===c.id);
-    return{title:'사건',body:e.t(S),ch:e.c.map(o=>o.risk?{l:o.l,tag:'위험',risk:1}:T(o.l,o.j?chance(o.j[0],o.j[1]):null))};}
+  if(c.k==='event'){const e=evById(c.id), mini=c.id.startsWith('m_');
+    return{title:mini?'이번 주의 선택':'사건',body:josa(e.t(S)),ch:e.c.map(o=>o.need&&S[o.need[0]]<o.need[1]?{l:o.l,tag:`${DN[o.need[0]]} ${o.need[1]} 필요`,lock:1}
+      :o.risk?{l:o.l,tag:'위험',risk:1}:o.need?{l:o.l,tag:`${DN[o.need[0]]} ${o.need[1]}+`,good:1}:T(o.l,o.j?chance(o.j[0],o.j[1]):null))};}
   if(c.k==='submit'){const bonus=subBonus();
     return{title:'원고 완성',body:'논문 한 편이 완성되었다. 어디에 투고할까? 높은 곳일수록 실적이 크다.',ch:JOURNAL.map(j=>T(`${j.n} (실적 ${j.pt}점)`,chance('res',j.req,bonus)))};}
   if(c.k==='army')return{title:'입영 통지',body:'2학년이 끝났다. 병역을 어떻게 할까?',ch:[T('지금 입대한다 (세 학기)'),T('미루고 박사 과정에서 전문연구요원에 도전한다')]};
@@ -714,7 +865,8 @@ function view(){
   if(c.k==='burnout')return{title:'다 때려치우고 싶다',body:'아침에 눈을 떴는데 연구실에 갈 이유가 떠오르지 않는다.',ch:[T('그래도 간다'),T('떠난다 (은퇴)')]};
 }
 const subBonus=()=>S.lab.pres*4-4+ADV[S.lab.type].sub;
-const admit=o=>chance('res',GRAD[o.pres].req,S.ugTier*5-5+(S.flags.known?8:0));
+const gpaBon=()=>S.gn?Math.round((S.gsum/S.gn-3)*10):0;
+const admit=o=>chance('res',GRAD[o.pres].req,S.ugTier*5-5+(S.flags.known?8:0)+gpaBon());
 function enter(o){S.lab={school:GRAD[o.pres].n,pres:o.pres,type:o.type,fav:2};S.stage='ms';S.ss=0;S.prog=0;focus(FOCUS[S.focus]?S.focus:'res');log(`${S.lab.school} 대학원 입학 (${o.type} 교수)`);}
 
 // 관계 행동: 개강 준비 화면에서 한 사람에게 학기마다 한 번. who는 S.ppl 번호 또는 'p'(연인). cost는 만 원, up은 친밀도(연인은 12당 호감 1), cha는 필요한 매력.
@@ -734,12 +886,15 @@ function relAct(who,a){const isP=who==='p', x=isP?S.partner:(S.ppl||[])[who]; if
 function resolve(i){LT=Math.max(0,S.t-1); try{resolve_(i);}finally{LT=null;}}
 function resolve_(i){
   const c=S.q.shift(); if(!c)return;
-  if(c.k==='event'){const e=EV.find(x=>x.id===c.id),o=e.c[i];
+  if(c.k==='event'){const e=evById(c.id); let o=e.c[i]; if(o.need&&S[o.need[0]]<o.need[1])o=e.c.find(x=>!x.need)||o; // 잠긴 선지는 고를 수 없다
     const ok=o.risk?rnd()*100<o.risk:o.j?roll(chance(o.j[0],o.j[1])):true, r=ok?o.ok:o.no;
-    const txt=typeof r[1]==='function'?r[1](S):r[1], cut=txt.search(/[.?!…]["”]?\s/);
+    const txt=josa(typeof r[1]==='function'?r[1](S):r[1]), [s1,s2]=split1(txt);
     const res=o.j||o.risk?(ok?'성공':'실패'):'결과';
-    fx(r[0],'사건'); log(cut<0?txt:txt.slice(0,cut+1).replace(/\s+$/,''),cut<0?'':txt.slice(cut+1).trim()); Object.assign(S.log[S.log.length-1],{mo:c.mo,w:c.w,ev:1,res});
-    S.q.unshift({k:'msg',title:res,body:txt,ev:1});}
+    const pre=Object.fromEntries([...STATS,'joy'].map(k=>[k,S[k]])), e2={...r[0]}; for(const k of STATS)if(e2[k])e2[k]*=e2[k]>0&&S[k]>=WALL?.5:1.5; // 벽 위에서는 사건 성장도 덜하다
+    fx(e2,'사건'); if(ok&&o.j)S[o.j[0]]=clamp(S[o.j[0]]+(S[o.j[0]]>=WALL?.5:1.5),0,100); // 해낸 일은 그 능력치를 키운다
+    const d={}; for(const k in pre){const v=S[k]-pre[k]; if(v){d[k]=v; S.mid=S.mid||{}; S.mid[k]=(S.mid[k]||0)+v;}}
+    log(s1,s2); Object.assign(S.log[S.log.length-1],{mo:c.mo,w:c.w,ev:1,res,d});
+    S.q.unshift({k:'msg',title:res,body:txt+(dtxt(d)?'\n\n'+dtxt(d):''),ev:1});}
   else if(c.k==='submit'){const j=JOURNAL[i],ok=roll(chance('res',j.req,subBonus()));
     if(ok){const big=rnd()<.12+Math.max(0,S.res-j.req)*.004, pt=big?Math.round(j.pt*1.5):j.pt;
       S.papers.push({n:j.n,pt,big,a:age()});S.prog=0;fx({joy:big?15:8,adv:1});log(`${j.n} 게재${big?' (화제의 논문)':''}`);
@@ -787,6 +942,7 @@ if(typeof document!=='undefined'){
   const role=()=>S.army>0?'군 복무 중':S.stage==='ug'?(S.alloc.study>=50&&S.ss>=4?'학부 연구생':'학부생'):S.stage==='ms'?'석사과정':'박사과정';
   const HOUSE='<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M7 1h2v1h1v1h1v1h1v1h1v1h1v1h1v2h-2v6H9v-4H7v4H3V9H1V7h1V6h1V5h1V4h1V3h1V2h1z"/></svg>';
   const hearts=n=>'호감 '+n+' / 5';
+  const dhtml=(d,sep=', ')=>Object.entries(d).filter(([,v])=>Math.abs(v)>=.1).map(([k,v])=>`<span class="${v>0?'up':'down'}">${DN[k]} ${v>0?'+':''}${Math.round(v*10)/10}</span>`).join(sep);
   function home(){const d=store.get('nobel.dogam')||{titles:[],endings:[]};
     if(ui.screen==='people')return `<div class="scroll"><h2>인물</h2>${!S?'<p class="muted">진행 중인 인생이 없습니다.</p>':`<ul class="list panel">
       <li><span>지도교수 ${S.lab?esc(S.lab.type):''}</span><span class="muted">${S.lab?hearts(S.lab.fav):'아직 없음'}</span></li>
@@ -826,7 +982,17 @@ if(typeof document!=='undefined'){
         <div class="eprog"><b class="num">${n} / ${EXAMS.length}</b><div class="meter"><i style="width:${n/EXAMS.length*100}%"></i></div></div>
         <p class="esay" aria-live="polite">${say}</p>
       </div>
-      <button class="btn big" data-a="${done?'born':'skip'}">${done?'대학 입학 결과 보기 →':'건너뛰기'}</button>`;}
+      <button class="btn big" data-a="${done?'go':'skip'}" data-v="boost">${done?'수능 결과 반영하기 →':'건너뛰기'}</button>`;}
+    if(ui.screen==='boost'){const f=ui.form, st=f.cands[+f.pick||0], g=f.exam[3], d=examFx(g), af=Object.fromEntries(STATS.map(k=>[k,clamp(st[k]+(d[k]||0),0,100)]));
+      const say=g<=2?'밤샘 공부가 고스란히 실력으로 남았다.':g<=5?'버텨 낸 1년이 조금씩 몸에 남았다.':'공부 말고도 배운 게 많은 1년이었다.';
+      return `<div class="scroll exam boost">
+        <div class="eband"><span>입학 전 · ${esc(f.name||'김연구')}</span></div>
+        <div class="ehead"><img class="estu" src="에셋/고3-학생.webp" alt=""><div><h1>수능 ${g}등급</h1><i class="rule" aria-hidden="true"></i><p>${say}</p></div></div>
+        <section class="panel frame tstat"><header><h2>고3이 남긴 것</h2><small>수능 등급에 따라 능력치가 올랐다</small></header><i class="rule" aria-hidden="true"></i>
+          ${STATS.map(k=>`<div class="tbar"><span>${TSN[k]}</span><div class="meter"><i style="width:${af[k]}%;background:linear-gradient(90deg,${TCOL[k]} ${st[k]/af[k]*100}%,#f0ad45 0)"></i></div><b class="num">${af[k]}<em class="up">+${af[k]-st[k]}</em></b></div>`).join('')}</section>
+        <p class="tsum">노란 칸이 고3 1년 동안 오른 만큼입니다</p>
+      </div>
+      <button class="btn big" data-a="born">대학 입학 결과 보기 →</button>`;}
     const live=S&&!S.end;
     return `<div class="stage"><img src="에셋/홈-무대.webp" alt="노벨상 키우기"></div>
       <button class="btn big" data-a="go" data-v="game" ${live?'':'disabled'}>이어하기${live?` (${age()}세)`:''}</button>
@@ -837,7 +1003,7 @@ if(typeof document!=='undefined'){
     <p>${esc(e.line)}</p>
     <div class="stats panel" style="flex-direction:row;display:grid">${STATS.map(k=>`<div><span class="label">${SN[k]}</span><b class="num">${Math.round(S[k])}</b></div>`).join('')}</div>
     <ul class="list panel"><li><span>게재 논문</span><span class="num">${S.papers.length}편 (실적 ${pts()}점)</span></li><li><span>재산</span><span class="num">${won(S.money)}</span></li><li><span>행복</span><span class="num">${Math.round(S.joy)}</span></li><li><span>칭호</span><span>${S.titles.length?S.titles.map(esc).join(', '):'없음'}</span></li></ul>
-    <div class="panel"><span class="label">연표</span><ul class="list">${S.log.map(l=>`<li><span>${esc(l.s)}</span><span class="muted num">${l.a}세</span></li>`).join('')}</ul></div>
+    <div class="panel"><span class="label">연표</span><ul class="list">${S.log.map(l=>`<li><span>${esc(l.s)}${l.sub?' '+esc(l.sub):''}</span><span class="muted num">${l.a}세</span></li>`).join('')}</ul></div>
     <p class="muted">시제품은 여기까지입니다. 포닥부터 정년까지는 전체 버전에서 이어집니다.</p></div>
     <button class="btn" data-a="go" data-v="create">새 인생</button><button class="btn ghost" data-a="go" data-v="home">홈으로</button>`;}
   // 학기 진행·결산 화면이 같이 쓰는 것. c는 그 학기의 결산 카드, c.b는 학기 시작 때 값.
@@ -857,14 +1023,14 @@ if(typeof document!=='undefined'){
     const study=c.gpa!=null?hl('학점','학기 평점',`${c.gpa.toFixed(1)} / 4.5`,(n=>n?`전공 A+ ${n}과목`:c.gpa>=3?'무난한 학기':'재수강각')(Math.max(0,Math.round((c.gpa-3.6)*3))))
       :grad()?hl('논문','논문',papers?`게재 ${papers}편`:`진행 ${Math.round(S.prog)}%`,papers?esc(S.papers.slice(-papers).map(p=>p.n).join(', ')):`지난 학기 ${Math.round(c.prog0)}%에서`)
       :hl('학점','학업',c.name.startsWith('군')?'복무 중':'휴식','이번 학기는 학점이 없다');
-    const rows=(c.out||[]).map(r=>row(...r)).join('')+titles.map(t=>row('수상','수상','새 칭호를 얻었다',esc(t))).join('');
+    const rows=(c.out||[]).map(r=>row(...r)).join('')+(c.spark||[]).map(k=>row('수상',`${SL(k)} 잠재력 폭발`,'이번 학기 성장이 평소의 두 배를 넘었다',`+${Math.round(S[k]-b[k])}`)).join('')+(c.brk||[]).map(k=>row('성과',`${SL(k)} 벽 돌파`,'75를 넘어 한 단계 올라섰다',`+${Math.round(S[k]-b[k])}`)).join('')+titles.map(t=>row('수상','수상','새 칭호를 얻었다',esc(t))).join('');
     // 능력치 변화: 막대의 세로 금이 이전 수치, 그 옆 밝은 칸(줄었으면 빗금)이 이번 학기 변화
     const o0=ovr(b), o1=ovr(S);
     const chg=k=>{const a=Math.round(b[k]??S[k]), z=Math.round(S[k]), lo=Math.min(a,z);
       return `<div class="chg"><span>${SL(k)}</span><b class="num">${a} → ${z}</b><em class="num ${cl(z-a)}">${sg(z-a)}</em>
         <div class="meter" style="--bar:${COL2[k]}"><i style="width:${lo}%"></i><i class="${cl(z-a)}" style="left:${lo}%;width:${Math.abs(z-a)}%"></i><u style="left:${a}%"></u></div></div>`;};
     // 재정
-    const L=S.led, net=L.inc-L.exp, ICO={인건비:'학사모','집안 지원':'학사모',생활비:'식사',월세:'식사',외식:'식사',모임:'식사','집 구매':'자산','과외 받기':'강의','어학 연수':'영어',플렉스:'행복','가성비 절약':'영수증',투자:'코인'};
+    const L=S.led, net=L.inc-L.exp, ICO={인건비:'학사모','성적 장학금':'학점','집안 지원':'학사모',생활비:'식사',월세:'식사',외식:'식사',모임:'식사','집 구매':'자산','과외 받기':'강의','어학 연수':'영어',플렉스:'행복','가성비 절약':'영수증',투자:'코인'};
     const items=(o,def)=>Object.entries(o||{}).sort((x,y)=>y[1]-x[1]).map(([n,v])=>`<div class="it">${ic(ICO[n]||def)}<span>${n}</span><b class="num">${won(v)}</b></div>`).join('');
     const bal=(icon,n,a,z)=>`<div class="bal">${ic(icon)}<b>${n}</b><span class="muted num">${won(a)} →</span><span class="chip pill num">${won(z)}</span></div>`;
     // 관계: [그림, 이름, 사이, 한 줄, 지금 친밀도, 이전 친밀도, 새 인연]. 교수·라이벌·연인의 호감 0~5는 20을 곱해 같은 눈금으로 보인다.
@@ -872,8 +1038,8 @@ if(typeof document!=='undefined'){
     const dv=p=>p[5]==null?0:p[4]-p[5];
     const ppl=[...(S.ppl||[]).map(x=>[x.img,x.n,x.role,x.n in p0?(x.v>=p0[x.n]?'여전히 가깝게 지낸다':'조금 소원해졌다'):NOTE[x.role],x.v,p0[x.n],!(x.n in p0)]),
       S.lab&&['교수',S.lab.type+' 교수','지도 교수','연구 상담을 받았다',x20(S.lab.fav),x20(f0.lab)],
-      ['라이벌',S.rival.name,'동기','같은 학번의 맞수',x20(S.rival.fav),x20(f0.rival)],
-      S.partner&&['연인',S.partner.name,'연인',c.p0?'연인과 함께':'사귀기 시작했다',x20(S.partner.fav),c.p0?x20(f0.partner):null,!c.p0]].filter(Boolean)
+      [S.rival.img||'라이벌',S.rival.name,'동기','같은 학번의 맞수',x20(S.rival.fav),x20(f0.rival)],
+      S.partner&&[S.partner.img||'연인',S.partner.name,'연인',c.p0?'연인과 함께':'사귀기 시작했다',x20(S.partner.fav),c.p0?x20(f0.partner):null,!c.p0]].filter(Boolean)
       .sort((x,y)=>(y[6]||0)-(x[6]||0)||dv(y)-dv(x)).slice(0,4);
     const bye=c.p0&&!S.partner, nw=ppl.filter(p=>p[6]).length, up=ppl.filter(p=>dv(p)>0).length;
     return `${top(c)}<div class="scroll">
@@ -892,7 +1058,7 @@ if(typeof document!=='undefined'){
         ${hl('인연','',[nw&&`새 인연 ${nw}명`,up&&`깊어진 관계 ${up}명`,bye&&'이별 1명'].filter(Boolean).join(' · ')||'변함없는 한 학기')}
         <div>${ppl.map(p=>`<div class="per">${ic(p[0],'인물-')}<div><p><b>${esc(p[1])}</b> · ${p[2]}</p><small>${p[6]?'<span class="tag new">신규</span>':''}${esc(p[3])}</small></div>
           <div class="fav"><span class="chip">친밀도</span><b class="num">${p[4]}</b>${dv(p)?`<em class="num ${cl(dv(p))}">(${sg(dv(p))})</em>`:''}</div></div>`).join('')}</div>
-        <div class="sub"><i class="rule"></i><span>${bye?esc(c.p0)+'와(과) 헤어졌다.':'이번 학기에도 함께 성장했다.'}</span><i class="rule"></i></div></section>
+        <div class="sub"><i class="rule"></i><span>${bye?josa(esc(c.p0)+'와(과) 헤어졌다.'):'이번 학기에도 함께 성장했다.'}</span><i class="rule"></i></div></section>
       <section class="card endbox"><button class="btn big" data-a="res" data-v="0">다음 →</button>
         <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
           <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section></div>`;
@@ -906,7 +1072,7 @@ if(typeof document!=='undefined'){
       ['논문',grad()?`게재 ${S.papers.length}편 · 진행 ${Math.round(S.prog)}%`:(R.papers||[]).length?`${R.papers.length}편 · 피인용 ${R.papers.reduce((a,p)=>a+p.c,0)}회`:'아직 없음'],
       ['영어 성적',S.lang?`TOEIC ${S.lang.score}점 (${langOk()?'유효 '+langLeft()+'학기':'만료'})`:'미응시'],['랩 인턴',R.intern?`합격 ${R.intern}회`:'없음'],['진학',S.stage==='ug'?(S.ss>=8?'원서 접수':'준비 중'):S.stage==='ms'?'대학원 합격':'박사 과정']];
     const ppl=[...(S.ppl||[]).map(x=>[x.img,x.n,x.role,x.v]),S.lab&&['교수',S.lab.type+' 교수','지도 교수',S.lab.fav*20],
-      ['라이벌',S.rival.name,'동기',S.rival.fav*20],S.partner&&['연인',S.partner.name,'연인',S.partner.fav*20]].filter(Boolean);
+      [S.rival.img||'라이벌',S.rival.name,'동기',S.rival.fav*20],S.partner&&[S.partner.img||'연인',S.partner.name,'연인',S.partner.fav*20]].filter(Boolean);
     const cell=k=>{const v=Math.round(S[k]);return `<div><p><span>${SL(k)}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL2[k]}"><i style="width:${v}%"></i></div></div>`;};
     const fold=(n,body)=>`<details class="card fold" data-k="${n}"${ui.fold[n]?' open':''}><summary><span>${n}</span><i class="rule"></i></summary>${body}</details>`;
     const actUI=S.army>0?'<p class="muted">복무 중에는 고를 수 없습니다.</p>':`<p class="hint">이번 학기에 도전할 활동을 하나 선택하세요</p><div role="radiogroup" aria-label="학업 활동">${Object.keys(ACTS).map(k=>{const A=ACTS[k];
@@ -961,15 +1127,16 @@ if(typeof document!=='undefined'){
     const c=S.q.find(x=>x.k==='settle'), b=c.b, done=S.pend?8-S.pend.length:8, logs=S.log.filter(l=>l.t===c.t).reverse(), n=S.log.length;
     const acts=c.name.startsWith('군')?'군 복무':ugf()?ugf().n:blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · ');
     const kv=(k,v,w)=>`<div class="kv${w?' wide':''}"><span class="chip">${k}</span><b class="num">${v}</b></div>`;
-    const cell=k=>{const v=Math.round(b[k]??S[k]);return `<div><p><span>${SL(k)}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL[k]}"><i style="width:${v}%"></i></div></div>`;};
+    const cell=k=>{const v=Math.round(clamp((b[k]??S[k])+((S.mid||{})[k]||0),0,100));return `<div><p><span>${SL(k)}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL[k]}"><i style="width:${v}%"></i></div></div>`;};
     return `${top(c,`<div class="tprog"><div><small class="num">${c.t%2+1}학기 · ${done*2} / 16주</small><div class="meter"><i style="width:${done*12.5}%"></i></div></div>
         <button class="tbtn${ui.paused?' on':''}" data-a="pause" ${S.pend?'':'disabled'}>${PAUSE}일시 정지</button><button class="tbtn" data-a="play" ${S.pend?'':'disabled'}>${PLAY}진행</button></div>`)}
       <div class="scroll">
       <section class="card"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정">
         <div class="kv2">${kv('통장 잔고',won(b.money))}${kv('소득','월 '+won(S.led.inc/4))}${kv('재산',won(asset(b)))}${kv('직책',role())}${kv('참여 활동',acts,1)}</div></section>
       <section class="card sg">${['lec','res','cha','eco','joy'].map(cell).join('')}</section>
+      ${logs[0]?`<section class="card now${ui.flash===n?' pop':''}"><span class="chip">${logs[0].mo?wk(logs[0])+'주':'소식'}</span><p>${esc(logs[0].s)}</p>${logs[0].sub?`<small>${esc(logs[0].sub)}</small>`:''}${dtxt(logs[0].d)?`<div class="dchips">${dhtml(logs[0].d,'')}</div>`:''}</section>`:''}
       <section class="card book"><header><h2>학기 기록</h2><span class="muted">최신순</span></header><i class="rule"></i>
-        ${logs.map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><div><b>${esc(l.s)}</b>${l.sub?`<small>${esc(l.sub)}</small>`:''}</div></div>`).join('')||'<p class="muted" style="text-align:center">새 학기가 시작됐다.</p>'}</section></div>`;
+        ${logs.map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><div><b>${esc(l.s)}</b>${l.sub?`<small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?`<small class="dd">${dhtml(l.d)}</small>`:''}</div></div>`).join('')||'<p class="muted" style="text-align:center">새 학기가 시작됐다.</p>'}</section></div>`;
   }
   // 문단별 체크포인트는 저장한다. 화면을 떠나면 타이머를 끊고 이어하기에서 복구한다.
   let storyTimer=null;
@@ -1023,7 +1190,7 @@ if(typeof document!=='undefined'){
     const v=onSettle?null:view(); if(!v)return'';
     return `<div class="overlay"><div class="sheet">${v.stamp?'<img class="medal" src="에셋/메달.webp" alt="">':''}<span class="label">${esc(v.title)}</span>${v.stamp?`<div class="stamp">${esc(v.stamp)}</div>`:''}<p>${nl(v.body)}</p>${v.ch.map((c,i)=>
       v.ch.length===1&&!c.tag?`<button class="btn" data-a="res" data-v="${i}">${esc(c.l)}</button>`
-      :`<button class="choice" data-a="res" data-v="${i}"><span>${nl(c.l)}</span>${c.tag?`<span class="tag${c.risk?' risk':''}">${c.tag}</span>`:''}</button>`).join('')}</div></div>`;
+      :`<button class="choice" data-a="res" data-v="${i}"${c.lock?' disabled':''}><span>${nl(c.l)}</span>${c.tag?`<span class="tag${c.risk?' risk':''}${c.good?' good':''}">${c.tag}</span>`:''}</button>`).join('')}</div></div>`;
   }
   function render(){clearTimeout(storyTimer);storyTimer=null;clearTimeout(ui.examTimer);
     if(ui.screen==='exam'&&ui.examStep<EXAMS.length)ui.examTimer=setTimeout(()=>{if(ui.screen==='exam'){ui.examStep++;render();}},ui.examStep?1100:700);const k=kind(), sc=app.querySelector('.scroll'), y=k===ui.kind&&sc?sc.scrollTop:0; ui.kind=k;
@@ -1058,5 +1225,5 @@ if(typeof document!=='undefined'){
     render();
   });
   S=store.get('nobel.life'); if(S&&!S.end)fixAlloc(); render();
-}else{ globalThis.G={newLife,advance,resolve,view,reveal,focus,relAct,RACT,BUY,LIFE,PORT,UGF,ACTS,get S(){return S;},STATS,pts}; }
+}else{ globalThis.G={newLife,advance,resolve,view,reveal,focus,relAct,RACT,BUY,LIFE,PORT,UGF,ACTS,get S(){return S;},STATS,pts,josa,split1}; }
 </script>
