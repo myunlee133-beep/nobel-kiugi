@@ -1,2 +1,7 @@
 .DS_Store
 KakaoTalk_Photo_*.png
+
+# 기기별 경로와 로컬 미리보기 주소가 포함된 생성 파일
+/reports/package.json
+/reports/state-coverage.json
+/reports/visual-smoke/
