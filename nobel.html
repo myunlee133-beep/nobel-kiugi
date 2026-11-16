@@ -3,17 +3,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>노벨상 키우기</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* 레이아웃: 한 손 세로 화면. 에셋 폴더의 도트 시안(크림 바탕, 버건디, 금색)을 따른다. 그림은 시안에서 잘라 쓰고 버튼과 틀은 CSS로 그린다. */
 :root{
   --bg:#fdeedb; --surface:#fff3e1; --ink:#4a1a14; --muted:#8c5139; --line:#c9a184;
   --accent:#8b0a2b; --accent-ink:#fdf3e0; --edge:#63061c; --hi:#e84e74; --gold:#b4730d;
   --good:#1c7448; --bad:#b3261e; --bar:#8b0a2b;
-  --px:"Galmuri11","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --font:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; /* 글자는 일반 폰트, 도트는 그림(에셋)에만 쓴다 */
 }
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--px);font-size:15px;line-height:1.6;
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 *{box-sizing:border-box}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
@@ -171,13 +171,26 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .kv{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2px 8px;padding:7px 0;border-bottom:2px solid #ead9c4}
 .kv b{font-size:16px;white-space:nowrap}
 .kv.wide{grid-column:1/-1;border:0;justify-content:flex-start;gap:2px 14px}
-.sg{display:grid;grid-template-columns:repeat(6,1fr);row-gap:12px}
-.sg>div{grid-column:span 2;padding:0 8px;min-width:0;display:flex;flex-direction:column;gap:4px}
-.sg>div:nth-child(n+4){grid-column:span 3}
-.sg>div:nth-child(2),.sg>div:nth-child(3),.sg>div:nth-child(5){border-left:2px solid var(--line)}
-.sg p{display:flex;justify-content:space-between;align-items:baseline}
-.sg span{font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
-.sg b{font-size:min(24px,5.6vw);line-height:1.2}
+.card.sg{flex-direction:row;align-items:center;gap:8px;padding:8px 8px}
+.sgs{flex:1;min-width:0;display:grid;grid-template-columns:repeat(5,1fr)}
+.sgs>div{padding:0 4px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.sgs>div+div{border-left:1px solid var(--line)}
+.sg p{display:flex;flex-direction:column;line-height:1.15}
+.sg p span{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.sg p b{font-size:16px;line-height:1.2}
+.sg .meter{height:4px}
+/* 진행바 줄: 헤더 밖. 진행 막대 + 일시정지·배속 */
+.pbar{display:flex;align-items:center;gap:8px;margin:0 3px;flex:none}
+.pbar .pt{flex:1;min-width:0}
+.pbar small{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:3px}
+.pbar .meter{height:8px;background:var(--line)}.pbar .meter>i{background:#f0ad45}
+.pc{display:flex;gap:4px}
+.pbar .tbtn{padding:5px 7px;min-width:30px;justify-content:center;font-size:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.pbar .tbtn.on{background:var(--accent);color:var(--accent-ink)}
+.pbar .tbtn.go{padding:6px 14px;font-size:14px;background:var(--accent);color:var(--accent-ink)}
+.idl{display:flex;align-items:baseline;gap:8px;margin:0;padding:2px 4px 0;font-size:16px}
+.idl b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.idl i{font-style:normal;color:var(--muted)}
 .book{gap:6px}
 .book>header{display:flex;justify-content:space-between;align-items:baseline}
 .book>header h2{font-size:22px}
@@ -203,34 +216,6 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .res b,.per p b{font-size:17px;color:var(--accent)}
 .res b{display:block}
 .res small,.per small{display:block;font-size:13px;line-height:1.45;color:var(--muted)}
-.ovrb{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;background:var(--accent);color:var(--accent-ink);padding:6px 14px;font-weight:700}
-.ovrb>b{font-size:26px;text-align:center;border-left:2px solid rgba(253,243,224,.7)}
-.ovrb em{font-style:normal;font-size:20px;background:var(--accent-ink);padding:0 16px}
-.chg{display:grid;grid-template-columns:1fr auto 3em;align-items:baseline;gap:4px 10px;padding:8px 0 10px;border-bottom:2px solid #ead9c4}
-.chg>span{font-size:16px;font-weight:700;color:var(--accent)}
-.chg>b{font-size:17px}
-.chg em{font-style:normal;font-weight:700;font-size:17px;text-align:right}
-.chg .meter{grid-column:1/-1;position:relative;overflow:visible}
-.chg .meter i{position:absolute;top:0;left:0}
-.chg .meter i.up{filter:brightness(1.35) saturate(1.2)}
-.chg .meter i.down,.legend i.down{background:repeating-linear-gradient(135deg,#c9372c 0 3px,#f3b4ae 3px 6px)}
-.chg .meter u,.legend u{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--ink)}
-.legend{display:flex;justify-content:center;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
-.legend u{position:static;height:16px;margin:0 0 0 8px}
-.legend i{width:26px;height:10px;margin-left:8px;background:var(--good)}
-.io{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.io>div{min-width:0}
-.ioh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 8px;padding:8px 10px;background:#e9eccb}
-.ioh.out{background:#fbdcd3}
-.ioh b{font-size:min(20px,5vw);white-space:nowrap}
-.ioh.in b{color:var(--good)}
-.it{display:flex;flex-wrap:wrap;gap:2px 6px;white-space:nowrap;align-items:center;padding:7px 2px;border-bottom:2px solid #ead9c4;font-size:13px;line-height:1.3}
-.it span{font-weight:700;color:var(--accent);border-left:2px solid var(--line);padding-left:8px}
-.it .ico{width:22px}
-.it b{margin-left:auto;color:var(--muted)}
-.bal{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 10px;padding:8px 10px;background:#fdecc4}
-.bal .ico{width:36px}
-.bal>b{flex:1;font-size:18px;color:var(--accent);white-space:nowrap}
 .per{grid-template-columns:64px 1fr auto}
 .fav{display:flex;flex-direction:column;align-items:center;gap:2px}
 .fav b{font-size:28px;line-height:1.1;color:var(--good)}
@@ -244,6 +229,37 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .up{color:var(--good)}.down{color:var(--bad)}
 /* 다음 학기 계획 화면 */
 .fold{padding:8px 14px}
+.fold summary em{font-style:normal;font-size:14px;font-weight:400;color:var(--muted);white-space:nowrap}
+/* 숫자 위주 재정·투자 (2026-11-16): 큰 숫자 요약 → 점선 줄 */
+.fx{padding:6px 2px 4px}
+.fxg{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;padding:8px 4px 12px}
+.fxg>div{display:flex;flex-direction:column;min-width:0}
+.fxg span{font-size:13px;color:var(--muted)}
+.fxg b{font-size:clamp(20px,6vw,26px);line-height:1.25;white-space:nowrap}
+.fxg small{font-size:13px;color:var(--muted);word-break:keep-all}
+.fx h4{display:flex;align-items:baseline;gap:8px;margin:14px 4px 4px;padding-top:12px;border-top:2px solid #ead9c4;font-size:16px}
+.fx h4 small{font-size:12px;font-weight:400;color:var(--muted)}
+.fxl{list-style:none;margin:0;padding:0 4px}
+.fxl li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:15px;border-bottom:1px dotted var(--line)}
+.fxl li b{white-space:nowrap}
+.fxn{text-align:left!important;font-size:14px}
+.xr{display:grid;grid-template-columns:1fr auto 1.4em;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 6px;border-bottom:1px solid #ead9c4}
+.xr>span{display:flex;flex-direction:column;min-width:0}
+.xr>span b{font-size:16px}
+.xr>span small{font-size:12px;color:var(--muted);line-height:1.4;word-break:keep-all}
+.xr>em{font-style:normal;font-size:14px;white-space:nowrap;text-align:right}
+.xr>i{font-style:normal;font-weight:700;color:var(--accent);text-align:center;width:1.4em;height:1.4em;line-height:1.3em;border:2px solid #d9a9a9}
+.xr.on{background:#fdecc4}.xr.on>i{border-color:var(--accent)}.xr.on>span b{color:var(--accent)}
+.xr:disabled{opacity:.45;cursor:default}
+/* 관계 결산: 왼쪽 사이, 오른쪽 이름과 한 줄 */
+.lv{list-style:none;margin:0;padding:6px 4px 2px}
+.lv li{display:grid;grid-template-columns:5em 1fr;gap:10px;padding:7px 0;border-bottom:1px dotted var(--line)}
+.lv li>span{color:var(--muted);font-size:14px}
+.lv li>div{text-align:right;min-width:0}
+.lv b{font-size:15px}.lv em{font-style:normal}
+.lv small{display:block;font-size:13px;color:var(--muted)}
+.lnks{justify-content:center;gap:20px;padding:2px 0 6px}
+.lnk{font-size:14px;color:var(--muted);text-decoration:underline}
 .fold summary{list-style:none;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:20px;font-weight:700;color:var(--accent)}
 .fold summary::-webkit-details-marker{display:none}
 .fold summary::before{content:"▶";font-size:16px}
@@ -266,10 +282,10 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .ra .ico{width:18px;flex:none}
 .ra:disabled{opacity:.35;cursor:default}
 /* 인게임 화면의 초점 칩·선택 버튼과 선택 시트 (2026-11-16) */
-.ctl{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:3px;flex:none}
-.ctl button{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:2px 8px;padding:9px 8px;background:var(--surface);color:var(--accent);font-weight:700;line-height:1.3;
-  --e:var(--accent);box-shadow:0 -3px 0 var(--e),0 3px 0 var(--e),-3px 0 0 var(--e),3px 0 0 var(--e)}
-.ctl small{font-size:12px;color:var(--muted)}.ctl b{font-size:16px}.ctl i{font-style:normal;font-size:11px}
+.ctl{display:flex;flex-direction:column;gap:4px;flex:none}
+.ctl button{display:flex;align-items:baseline;justify-content:center;gap:4px;padding:3px 10px;background:var(--bg);color:var(--accent);font-weight:700;line-height:1.3;white-space:nowrap;
+  box-shadow:0 0 0 1px var(--accent)}
+.ctl small{font-size:11px;color:var(--muted)}.ctl b{font-size:13px}.ctl i{font-style:normal;font-size:10px}
 .ctl button.on{background:#fdecc4}
 .focbox{padding:8px 10px}.focbox .hint{font-size:13px;padding:6px 10px}
 .sheet-bg{position:fixed;inset:0;z-index:5;background:rgba(74,26,20,.55)}
@@ -1224,7 +1240,8 @@ if(typeof document!=='undefined'){
   const SL=k=>k==='joy'?'행복':SN[k]+(k==='cha'?'':'력'), COL={lec:'#8f2a3f',res:'#d49a1e',cha:'#7fa650',eco:'#4a7bbd',joy:'#149077'}, COL2={...COL,lec:'#d49a1e',res:'#7fa650',cha:'#8f2a3f'}; // 진행 시안과 결산 시안의 막대 색
   const asset=o=>o.money+(o.home?BUY.house.price:0); // 재산 = 통장 + 집
   const top=(c,more='')=>`<header class="top"><div class="trow"><button class="homebtn" data-a="go" data-v="home" aria-label="홈으로">${HOUSE}</button><span class="num">${20+(c.t>>1)}세 · ${esc(c.name.replace(/ \d학기$/,''))}</span><b class="who">${esc(S.name)}</b><span class="ovr">OVR<b class="num">${ovr(c.b)}</b></span></div>${more}</header>`;
-  // 학기 결산 화면: 성과 → 능력치 변화 → 재정 → 관계 → 다음 상자 순서로 아래로 스크롤된다.
+  // 학기 결산 화면(2026-11-16 컴팩트): 성과만 펼쳐 두고 재정·관계는 접어 둔다. '다음 학기' 버튼은 스크롤 밖 아래에 늘 보인다.
+  const FD=(k,n,body,note)=>`<details class="card fold" data-k="${k}"${ui.fold[k]?' open':''}><summary><span>${n}</span><i class="rule"></i>${note?`<em>${note}</em>`:''}</summary>${body}</details>`;
   function settle(c){
     const b=c.b, ic=(n,p='아이콘-')=>`<img class="ico" src="에셋/${p}${n}.webp" alt="">`;
     const sec=(t,d)=>`<header class="sec"><h2>${t}</h2>${d?`<span>${d}</span>`:''}</header><i class="rule"></i>`;
@@ -1237,15 +1254,8 @@ if(typeof document!=='undefined'){
       :grad()?hl('논문','논문',papers?`게재 ${papers}편`:`진행 ${Math.round(S.prog)}%`,papers?esc(S.papers.slice(-papers).map(p=>p.n).join(', ')):`지난 학기 ${Math.round(c.prog0)}%에서`)
       :hl('학점','학업',c.name.startsWith('군')?'복무 중':'휴식','이번 학기는 학점이 없다');
     const rows=(c.out||[]).map(r=>row(...r)).join('')+(c.spark||[]).map(k=>row('수상',`${SL(k)} 잠재력 폭발`,'이번 학기 성장이 평소의 두 배를 넘었다',`+${Math.round(S[k]-b[k])}`)).join('')+(c.brk||[]).map(k=>row('성과',`${SL(k)} 벽 돌파`,'75를 넘어 한 단계 올라섰다',`+${Math.round(S[k]-b[k])}`)).join('')+titles.map(t=>row('수상','수상','새 칭호를 얻었다',esc(t))).join('');
-    // 능력치 변화: 막대의 세로 금이 이전 수치, 그 옆 밝은 칸(줄었으면 빗금)이 이번 학기 변화
-    const o0=ovr(b), o1=ovr(S);
-    const chg=k=>{const a=Math.round(b[k]??S[k]), z=Math.round(S[k]), lo=Math.min(a,z);
-      return `<div class="chg"><span>${SL(k)}</span><b class="num">${a} → ${z}</b><em class="num ${cl(z-a)}">${sg(z-a)}</em>
-        <div class="meter" style="--bar:${COL2[k]}"><i style="width:${lo}%"></i><i class="${cl(z-a)}" style="left:${lo}%;width:${Math.abs(z-a)}%"></i><u style="left:${a}%"></u></div></div>`;};
     // 재정
     const L=S.led, net=L.inc-L.exp, ICO={인건비:'학사모','성적 장학금':'학점','집안 지원':'학사모',생활비:'식사',월세:'식사',외식:'식사',모임:'식사','집 구매':'자산','과외 받기':'강의','어학 연수':'영어',플렉스:'행복','가성비 절약':'영수증',투자:'코인'};
-    const items=(o,def)=>Object.entries(o||{}).sort((x,y)=>y[1]-x[1]).map(([n,v])=>`<div class="it">${ic(ICO[n]||def)}<span>${n}</span><b class="num">${won(v)}</b></div>`).join('');
-    const bal=(icon,n,a,z)=>`<div class="bal">${ic(icon)}<b>${n}</b><span class="muted num">${won(a)} →</span><span class="chip pill num">${won(z)}</span></div>`;
     // 관계: [그림, 이름, 사이, 한 줄, 지금 친밀도, 이전 친밀도, 새 인연]. 교수·라이벌·연인의 호감 0~5는 20을 곱해 같은 눈금으로 보인다.
     const f0=b.f||{}, p0=b.p||{}, x20=v=>v==null?null:v*20, NOTE={'연구실 동료':'함께 첫 공동 연구','학회 지인':'학회에서 명함을 나눴다','학과 친구':'공모전 준비를 함께했다','동아리 선배':'밥을 자주 사 준다','스터디 조원':'시험 기간을 함께 버텼다'};
     const dv=p=>p[5]==null?0:p[4]-p[5];
@@ -1255,26 +1265,20 @@ if(typeof document!=='undefined'){
       S.partner&&[S.partner.img||'연인',S.partner.name,'연인',c.p0?'연인과 함께':'사귀기 시작했다',x20(S.partner.fav),c.p0?x20(f0.partner):null,!c.p0]].filter(Boolean)
       .sort((x,y)=>(y[6]||0)-(x[6]||0)||dv(y)-dv(x)).slice(0,4);
     const bye=c.p0&&!S.partner, nw=ppl.filter(p=>p[6]).length, up=ppl.filter(p=>dv(p)>0).length;
+    const lines=[...Object.entries(L.in||{}),...Object.entries(L.out||{}).map(([n,v])=>[n,-v])].sort((x,y)=>Math.abs(y[1])-Math.abs(x[1]));
+    const sgw=v=>(v>0?'+':v<0?'−':'')+won(Math.abs(v)), relNote=[nw&&`새 인연 ${nw}명`,up&&`깊어진 관계 ${up}명`,bye&&'이별 1명'].filter(Boolean).join(' · ')||'변함없음';
     return `${top(c)}<div class="scroll">
-      <div class="ttl"><h1>${esc(c.name)} 결산</h1><div class="sub"><i class="rule"></i><span>이번 학기의 성과와 성장</span><i class="rule"></i></div></div>
+      <div class="ttl"><h1>${esc(c.name)} 결산</h1></div>
       <section class="card">${sec('성과','한 학기의 도전과 결과')}${study}${rows||'<p class="muted" style="text-align:center">별일 없이 조용한 학기였다.</p>'}</section>
-      <section class="card">${sec('능력치 변화')}
-        <div class="ovrb"><span>OVR</span><b class="num">${o0} → ${o1}</b><em class="num ${cl(o1-o0)}">${sg(o1-o0)}</em></div>
-        <div>${['lec','res','cha','eco','joy'].map(chg).join('')}</div>
-        <p class="legend"><i style="background:var(--line)"></i>이전 수치<i></i>이번 학기 변화</p></section>
-      <section class="card">${sec('재정','이번 학기의 수입과 지출')}
-        ${hl('동전','순수익',`${net>0?'+':''}${won(net)}`)}
-        <div class="io"><div><div class="ioh in"><span class="chip">수입</span><b class="num">${won(L.inc)}</b></div>${items(L.in,'가방')}</div>
-          <div><div class="ioh out"><span class="chip">지출</span><b class="num">${won(L.exp)}</b></div>${items(L.out,'영수증')}</div></div>
-        ${bal('통장','통장 잔고',b.money,S.money)}${bal('자산','총자산',asset(b),asset(S))}</section>
-      <section class="card">${sec('관계','함께한 사람들')}
-        ${hl('인연','',[nw&&`새 인연 ${nw}명`,up&&`깊어진 관계 ${up}명`,bye&&'이별 1명'].filter(Boolean).join(' · ')||'변함없는 한 학기')}
-        <div>${ppl.map(p=>`<div class="per">${ic(p[0],'인물-')}<div><p><b>${esc(p[1])}</b> · ${p[2]}</p><small>${p[6]?'<span class="tag new">신규</span>':''}${esc(p[3])}</small></div>
-          <div class="fav"><span class="chip">친밀도</span><b class="num">${p[4]}</b>${dv(p)?`<em class="num ${cl(dv(p))}">(${sg(dv(p))})</em>`:''}</div></div>`).join('')}</div>
-        <div class="sub"><i class="rule"></i><span>${bye?josa(esc(c.p0)+'와(과) 헤어졌다.'):'이번 학기에도 함께 성장했다.'}</span><i class="rule"></i></div></section>
-      <section class="card endbox"><button class="btn big" data-a="res" data-v="0">다음 →</button>
-        <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
-          <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section></div>`;
+      ${FD('s_fin','재정',`<div class="fx"><div class="fxg">
+          <div><span>순수익</span><b class="num ${cl(net)}">${sgw(net)}</b><small>수입 ${won(L.inc)} · 지출 ${won(L.exp)}</small></div>
+          <div><span>통장 잔고</span><b class="num">${won(S.money)}</b><small>학기 초 ${won(b.money)}</small></div>
+          <div><span>총자산</span><b class="num">${won(asset(S))}</b><small>학기 초 ${won(asset(b))}</small></div></div>
+        <ul class="fxl dot">${lines.map(([n,v])=>`<li><span>${esc(n)}</span><b class="num ${cl(v)}">${sgw(v)}</b></li>`).join('')||'<li><span class="muted">돈이 오가지 않았다</span></li>'}</ul></div>`,sgw(net))}
+      ${FD('s_rel','관계',`<ul class="lv">${ppl.map(p=>`<li><span>${p[2]}</span><div><b>${esc(p[1])} · 친밀도 <span class="num">${p[4]}</span>${dv(p)?` <em class="num ${cl(dv(p))}">${sg(dv(p))}</em>`:''}</b><small>${p[6]?'신규 · ':''}${esc(p[3])}</small></div></li>`).join('')}</ul>
+        ${bye?`<p class="muted fxn">${josa(esc(c.p0)+'와(과) 헤어졌다.')}</p>`:''}`,relNote)}
+      <div class="row lnks"><button class="lnk" data-a="retire">은퇴</button><button class="lnk" data-a="go" data-v="create">다시 태어나기</button></div></div>
+      <button class="btn big" data-a="res" data-v="0">다음 학기 →</button>`;
   }
   // 초점과 선택(투자·관계·학업): 2026-11-16부터 따로 화면을 두지 않고 인게임 화면(progress) 안의 초점 칩과 선택 시트로 보여 준다. picks()는 그 조각들을 만든다.
   const FSUB={lec:'수업과 발표',res:'탐구와 논문',cha:'소통과 만남',eco:'수입과 자산',joy:'휴식과 일상'}, FICO={lec:'강의',res:'연구',cha:'매력',eco:'코인',joy:'행복'};
@@ -1290,12 +1294,21 @@ if(typeof document!=='undefined'){
     const fold=(n,body)=>`<details class="card fold" data-k="${n}"${ui.fold[n]?' open':''}><summary><span>${n}</span><i class="rule"></i></summary>${body}</details>`;
     const actUI=S.army>0?'<p class="muted">복무 중에는 고를 수 없습니다.</p>':`<p class="hint">이번 학기에 도전할 활동을 하나 선택하세요</p><div role="radiogroup" aria-label="학업 활동">${Object.keys(ACTS).map(k=>{const A=ACTS[k];
       return `<button class="fo ug${S.act===k?' on':''}" role="radio" aria-checked="${S.act===k}" data-a="act" data-v="${k}">${ic(A.ico)}<span class="fn"><b>${A.n}</b><small>${A.d}${A.p?` · 합격 확률 ${label(pAct(k))}`:''}${fbon(k)?' · 초점 보너스':''}</small></span><span class="fr"><i></i>${S.act===k?'선택됨':''}</span></button>`;}).join('')}</div>`;
-    const opt=(a,k,o,on,dis,d)=>`<button class="fo ug${on?' on':''}" role="${a==='buy'?'checkbox':'radio'}" aria-checked="${on}" data-a="${a}" data-v="${k}"${dis?' disabled':''}>${ic(o.ico)}<span class="fn"><b>${o.n}</b><small>${d}</small></span><span class="fr"><i></i>${on?'선택됨':''}</span></button>`, B=S.buy||{};
-    const invUI=`<p class="hint">이번 학기에 살 것을 고르세요 (여러 개 가능)</p><div>${Object.keys(BUY).map(k=>{const o=BUY[k],ok=o.can(),on=ok&&!!B[k],poor=S.money<o.price;
-        return opt('buy',k,o,on,!ok||poor&&!on,`${won(o.price)} · ${o.d}${!ok?(k==='house'?' · 보유 중':' · 복무 중에는 못 한다'):poor?' · 잔고 부족':''}${k==='abroad'?` · 현재 어학 능력 ${S.lingo||0}`:''}`);}).join('')}</div>
-      <i class="rule" style="display:block;margin:18px 6px"></i>
-      <p class="hint">생활 수준을 하나 선택하세요</p><div role="radiogroup" aria-label="생활 수준">${Object.keys(LIFE).map(k=>opt('life',k,LIFE[k],(S.life||'mid')===k,0,LIFE[k].d)).join('')}</div>
-      <p class="hint">통장 잔고를 어디에 둘지 선택하세요</p><div role="radiogroup" aria-label="재산 운용">${Object.keys(PORT).map(k=>opt('port',k,PORT[k],(S.port||'dep')===k,0,PORT[k].d)).join('')}</div>`;
+    // 투자 탭(2026-11-16): 위에 숫자 요약, 그 아래 고르는 줄. 그림 대신 숫자 위주.
+    const B=S.buy||{}, xr=(a,k,on,dis,n,d,r)=>`<button class="xr${on?' on':''}" role="${a==='buy'?'checkbox':'radio'}" aria-checked="${on}" data-a="${a}" data-v="${k}"${dis?' disabled':''}><span><b>${n}</b><small>${d}</small></span><em>${r||''}</em><i aria-hidden="true">${on?'✓':''}</i></button>`;
+    const cost=v=>v>0?`<b class="down">−${won(v)}</b>`:v<0?`<b class="up">+${won(-v)}</b>`:'<span class="muted">0</span>';
+    const invUI=`<div class="fx"><div class="fxg">
+        <div><span>통장 잔고</span><b class="num ${S.money<0?'down':''}">${won(S.money)}</b><small>${PORT[S.port||'dep'].n}에 넣어 둠</small></div>
+        <div><span>총자산</span><b class="num">${won(asset(S))}</b><small>${S.home?'집 포함':'통장뿐'}</small></div>
+        <div><span>지난 학기 소득</span><b class="num">${won(S.inc0||0)}</b><small>월 ${won((S.inc0||0)/4)}</small></div>
+        <div><span>생활 수준</span><b>${LIFE[S.life||'mid'].n}</b><small>${LIFE[S.life||'mid'].d}</small></div></div>
+      <h4>재산 운용 <small>통장 잔고를 둘 곳</small></h4>
+      <div role="radiogroup" aria-label="재산 운용">${Object.keys(PORT).map(k=>xr('port',k,(S.port||'dep')===k,0,PORT[k].n,PORT[k].d)).join('')}</div>
+      <h4>생활 수준</h4>
+      <div role="radiogroup" aria-label="생활 수준">${Object.keys(LIFE).map(k=>xr('life',k,(S.life||'mid')===k,0,LIFE[k].n,LIFE[k].d,cost(LIFE[k].cost))).join('')}</div>
+      <h4>이번 학기에 살 것 <small>여러 개 가능</small></h4>
+      <div>${Object.keys(BUY).map(k=>{const o=BUY[k],ok=o.can(),on=ok&&!!B[k],poor=S.money<o.price;
+        return xr('buy',k,on,!ok||poor&&!on,o.n,`${o.d}${!ok?(k==='house'?' · 보유 중':' · 복무 중에는 못 한다'):poor?' · 잔고 부족':''}${k==='abroad'?` · 현재 어학 능력 ${S.lingo||0}`:''}`,cost(o.price));}).join('')}</div></div>`;
     // 관계 접기: 2026-11-13 시안. 사람마다 행동 6개. 그림 에셋이 없는 선물·손절·청혼은 12×12 도트 SVG.
     const PXC={k:'#3a2420',r:'#c8323c',y:'#f0b93a',g:'#8a8f99',b:'#9fd3f0',w:'#fff'}, px=rows=>`<svg class="ico" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">${rows.split(' ').map((r,y)=>[...r].map((c,x)=>PXC[c]?`<rect x="${x}" y="${y}" width="1" height="1" fill="${PXC[c]}"/>`:'').join('')).join('')}</svg>`;
     const RI={trip:ic('가방'),meal:ic('식사'),confess:ic('매력'),
@@ -1332,17 +1345,18 @@ if(typeof document!=='undefined'){
     const sheet=ui.sheet!=='pick'?'':`<div class="sheet-bg" data-a="close"></div><section class="sheet" role="dialog" aria-label="학기 선택">
         <header><div class="rtabs" role="tablist">${['투자','관계','학업'].map(k=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" data-a="ptab" data-v="${k}">${k}</button>`).join('')}</div><button data-a="close">닫기</button></header>
         <div class="sheet-body"><p class="sheet-note">${live?'지금 고른 것은 다음 학기부터 적용된다. ':''}고르는 동안 시간은 멈춰 있다.</p>${{투자:P.invUI,관계:P.relUI,학업:P.actUI}[tab]}</div></section>`;
-    return `${top(c,`<div class="tprog"><div><small class="num">${c.t%2+1}학기 · ${done*2} / 16주</small><div class="meter"><i style="width:${done*12.5}%"></i></div></div>
-        <button class="tbtn${ui.paused&&live?' on':''}" data-a="pause" ${S.pend?'':'disabled'}>${PAUSE}일시 정지</button>${live?`<button class="tbtn" data-a="play" ${S.pend?'':'disabled'}>${PLAY}진행</button>`:`<button class="tbtn" data-a="next">${PLAY}개강</button>`}</div>`)}
+    const SPD=[1,2,4,8], run=!!S.pend;
+    return `${top(c)}
+      <section class="pbar"><div class="pt"><small class="num">${c.t%2+1}학기 · ${done*2} / 16주</small><div class="meter"><i style="width:${done*12.5}%"></i></div></div>
+        <div class="pc">${live?`<button class="tbtn${ui.paused?' on':''}" data-a="pause" ${run?'':'disabled'} aria-label="일시 정지">${PAUSE}</button>`:`<button class="tbtn go" data-a="next">${PLAY}개강</button>`}
+          ${live?SPD.map(x=>`<button class="tbtn sp${(ui.speed||1)===x?' on':''}" data-a="speed" data-v="${x}" aria-label="${x}배속">${x}×</button>`).join('')+`<button class="tbtn" data-a="play" ${run?'':'disabled'} aria-label="다음 2주">»</button>`:''}</div></section>
       <div class="scroll">
       <section class="card"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정">
-        <div class="kv2">${kv('통장 잔고',won(b.money))}${kv('소득','월 '+won((live?S.led.inc:S.inc0||0)/4))}${kv('재산',won(asset(b)))}${kv('직책',role())}${kv('참여 활동',acts,1)}</div></section>
-      <section class="card sg">${['lec','res','cha','eco','joy'].map(cell).join('')}</section>
-      <section class="ctl"><button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}"><small>${live?'다음 학기 초점':'초점'}</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▲':'▼'}</i></button>
-        <button data-a="sheet"><small>선택</small><b>투자 · 관계 · 학업</b></button></section>
+        <p class="idl"><b>${age()}세</b><i>·</i><b>${role()}</b><i>·</i><b>${esc(S.lab?S.lab.school:UG[S.ugTier]?UG[S.ugTier].n:'')}</b></p></section>
+      <section class="card sg"><div class="sgs">${['lec','res','cha','eco','joy'].map(cell).join('')}</div>
+        <div class="ctl"><button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}" title="${live?'다음 학기 초점':'초점'}"><small>초점</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▴':'▾'}</i></button>
+        <button data-a="sheet"><b>선택</b></button></div></section>
       ${ui.fopen?`<section class="card focbox">${live&&!S.army?'<p class="hint">지금 바꾸면 다음 학기부터 적용됩니다</p>':''}${P.focUI}</section>`:''}
-      ${logs[0]?`<section class="card now${ui.flash===n?' pop':''}"><span class="chip">${logs[0].mo?wk(logs[0])+'주':'소식'}</span><p>${esc(logs[0].s)}</p>${logs[0].sub?`<small>${esc(logs[0].sub)}</small>`:''}${dtxt(logs[0].d)?`<div class="dchips">${dhtml(logs[0].d,'')}</div>`:''}</section>`
-        :live?'':`<section class="card now"><span class="chip">개강 전</span><p>초점과 선택을 정하고 개강을 누르면 학기가 시작된다.</p></section>`}
       ${live?`<section class="card book"><header><h2>학기 기록</h2><span class="muted">최신순</span></header><i class="rule"></i>
         ${logs.map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><div><b>${esc(l.s)}</b>${l.sub?`<small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?`<small class="dd">${dhtml(l.d)}</small>`:''}</div></div>`).join('')||'<p class="muted" style="text-align:center">새 학기가 시작됐다.</p>'}</section>`
         :`${P.fold('현재 상태',P.recUI)}<section class="card endbox"><button class="btn big" data-a="next">개강 →</button>
@@ -1458,7 +1472,7 @@ if(typeof document!=='undefined'){
     const active=document.activeElement, returnAction=active&&app.contains(active)&&active.dataset.a?{a:active.dataset.a,v:active.dataset.v}:null;
     app.innerHTML=ui.screen==='game'&&S?game():home();syncDecision(returnAction); ui.flash=0; if(y)app.querySelector('.scroll').scrollTop=y; if(sy){const nb=app.querySelector('.sheet-body'); if(nb)nb.scrollTop=sy;}
     if(k==='intro')animateStory();
-    if(S&&S.pend&&!ui.timer)ui.timer=setInterval(tick,900); else if((!S||!S.pend)&&ui.timer){clearInterval(ui.timer);ui.timer=null;}}
+    const ms=900/(ui.speed||1); if(S&&S.pend&&(!ui.timer||ui.tms!==ms)){clearInterval(ui.timer);ui.tms=ms;ui.timer=setInterval(tick,ms);} else if((!S||!S.pend)&&ui.timer){clearInterval(ui.timer);ui.timer=null;}}
   const waiting=()=>{const c=S.q[0];return c&&(c.k==='event'||c.ev);};
   function tick(){ if(!S||!S.pend||ui.screen!=='game'||ui.paused||ui.sheet||waiting()){if(!S||!S.pend)render();return;} reveal(); ui.flash=S.log.length; render(); }
   app.addEventListener('toggle',e=>{const d=e.target; if(d.tagName==='DETAILS'&&d.dataset.k)ui.fold[d.dataset.k]=d.open;},true); // 다시 그려도 펼침 상태를 지킨다
@@ -1477,8 +1491,9 @@ if(typeof document!=='undefined'){
     else if(a==='sheet')ui.sheet='pick';
     else if(a==='ptab'){ui.ptab=v;const sb=app.querySelector('.sheet-body');if(sb)sb.scrollTop=0;}
     else if(a==='pause')ui.paused=!ui.paused;
+    else if(a==='speed'){ui.speed=+v;ui.paused=false;}
     else if(a==='play'){ui.paused=false; if(S.pend&&!waiting()){reveal();ui.flash=S.log.length;}} // 기다리지 않고 바로 2주를 넘긴다
-    else if(a==='res'){const current=view(), i=Number(v);if(!Number.isInteger(i)||!current||!current.ch[i]||current.ch[i].lock)return;resolve(i);ui.gpick=0;}
+    else if(a==='res'){ui.fold.s_fin=ui.fold.s_rel=false;const current=view(), i=Number(v);if(!Number.isInteger(i)||!current||!current.ch[i]||current.ch[i].lock)return;resolve(i);ui.gpick=0;}
     else if(a==='focus'){focus(v);save();}
     else if(a==='act'){S.act=S.act===v?null:v;save();}
     else if(a==='buy'){S.buy=S.buy||{};S.buy[v]=!S.buy[v];save();}
