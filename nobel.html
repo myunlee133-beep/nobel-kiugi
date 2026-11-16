@@ -192,10 +192,23 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .idl b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .idl i{font-style:normal;color:var(--muted)}
 .book{gap:6px}
-.book>header{display:flex;justify-content:space-between;align-items:baseline}
+.book>header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.book .recl{display:flex;flex-direction:column}
+.book .rec{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:baseline;padding:6px 2px;border-bottom:1px dotted var(--line);background:none}
+.book .rec>span{min-width:2.6em;padding:0 5px;font-size:12px;line-height:1.6}
+.book .rec>p{margin:0;font-size:14px;line-height:1.4;font-weight:600;word-break:keep-all}
+.book .rec>p small{font-size:12px;color:var(--muted);font-weight:400}
+.book .rec em.dd{font-style:normal;font-size:12px;white-space:nowrap}
+.book .recn{text-align:center;padding:10px 0;margin:0}
+.book .more{align-self:center;padding:4px 8px}
+.book .focbox{margin:2px 0 6px}
+.book .ctl{flex-direction:row;gap:6px}
+.mny{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0 0;padding:6px 4px 0;border-top:1px dotted var(--line)}
+.mny span{display:flex;flex-direction:column;min-width:0}
+.mny small{font-size:11px;color:var(--muted)}
+.mny b{font-size:15px;white-space:nowrap}
 .book>header h2{font-size:22px}
 .rec{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:10px 8px;border-bottom:2px solid #ead9c4}
-.rec:first-of-type{background:#fbe6bd}
 .rec>span{min-width:3.4em;padding:2px 6px;background:#fbe3c0;color:var(--accent);font-weight:700;text-align:center}
 .rec>div{border-left:2px solid var(--line);padding-left:12px}
 .rec b{font-weight:700}
@@ -1114,7 +1127,7 @@ function resolve_(i){
   else if(c.k==='msEnd'){ if(i===1)return finish('exit'); S.stage='phd';S.ss=0;fixAlloc();log('박사 과정 진학'); }
   else if(c.k==='defense'){ if(i===0){ if(roll(chance('res',55,S.lab.fav*3))){log('박사 학위 취득');S.q.unshift({k:'phdDone'});save();return;}
       fx({joy:-10});msg('실패','"한 학기만 더 보완해 오세요." 심사위원 다섯 명이 동시에 고개를 끄덕였다.');} }
-  else if(c.k==='settle'){S.inc0=S.led.inc;S.led={inc:0,exp:0};} // inc0: 계획 화면의 월 소득
+  else if(c.k==='settle'){S.inc0=S.led.inc;S.exp0=S.led.exp;S.led={inc:0,exp:0};} // inc0: 계획 화면의 월 소득
   else if(c.k==='kicked')return finish('kicked');
   else if(c.k==='burnout'){ if(i===1)return finish('exit'); fx({joy:10,hp:-5}); msg('결과','갔다. 가서 앉아 있었다. 그것만으로도 대단한 날이 있다.'); }
   save();
@@ -1352,14 +1365,14 @@ if(typeof document!=='undefined'){
           ${live?SPD.map(x=>`<button class="tbtn sp${(ui.speed||1)===x?' on':''}" data-a="speed" data-v="${x}" aria-label="${x}배속">${x}×</button>`).join('')+`<button class="tbtn" data-a="play" ${run?'':'disabled'} aria-label="다음 2주">»</button>`:''}</div></section>
       <div class="scroll">
       <section class="card"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정">
-        <p class="idl"><b>${age()}세</b><i>·</i><b>${role()}</b><i>·</i><b>${esc(S.lab?S.lab.school:UG[S.ugTier]?UG[S.ugTier].n:'')}</b></p></section>
-      <section class="card sg"><div class="sgs">${['lec','res','cha','eco','joy'].map(cell).join('')}</div>
-        <div class="ctl"><button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}" title="${live?'다음 학기 초점':'초점'}"><small>초점</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▴':'▾'}</i></button>
-        <button data-a="sheet"><b>선택</b></button></div></section>
-      ${ui.fopen?`<section class="card focbox">${live&&!S.army?'<p class="hint">지금 바꾸면 다음 학기부터 적용됩니다</p>':''}${P.focUI}</section>`:''}
-      ${live?`<section class="card book"><header><h2>학기 기록</h2><span class="muted">최신순</span></header><i class="rule"></i>
-        ${logs.map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><div><b>${esc(l.s)}</b>${l.sub?`<small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?`<small class="dd">${dhtml(l.d)}</small>`:''}</div></div>`).join('')||'<p class="muted" style="text-align:center">새 학기가 시작됐다.</p>'}</section>`
-        :`${P.fold('현재 상태',P.recUI)}<section class="card endbox"><button class="btn big" data-a="next">개강 →</button>
+        <p class="idl"><b>${age()}세</b><i>·</i><b>${role()}</b><i>·</i><b>${esc(S.lab?S.lab.school:UG[S.ugTier]?UG[S.ugTier].n:'')}</b></p>
+        <p class="mny"><span><small>총 자산</small><b class="num">${won(asset(S))}</b></span><span><small>월 소득</small><b class="num up">${won(((live?S.led.inc:S.inc0)||0)/4)}</b></span><span><small>월 비용</small><b class="num down">${won(((live?S.led.exp:S.exp0)||0)/4)}</b></span></p></section>
+      <section class="card sg"><div class="sgs">${['lec','res','cha','eco','joy'].map(cell).join('')}</div></section>
+      <section class="card book"><header><h2>학기 기록</h2><div class="ctl"><button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}" title="${live?'다음 학기 초점':'초점'}"><small>초점</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▴':'▾'}</i></button><button data-a="sheet"><b>선택</b></button></div></header>
+        ${ui.fopen?`<div class="focbox">${live&&!S.army?'<p class="hint">지금 바꾸면 다음 학기부터 적용됩니다</p>':''}${P.focUI}</div>`:''}
+        <div class="recl">${logs.slice(0,ui.logN||6).map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><p>${esc(l.s)}${l.sub?` <small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?` <em class="dd">${dhtml(l.d,' ')}</em>`:''}</p></div>`).join('')||`<p class="muted recn">${live?'새 학기가 시작됐다.':'개강을 누르면 학기가 시작된다.'}</p>`}</div>
+        ${logs.length>(ui.logN||6)?`<button class="lnk more" data-a="more">이전 기록 ${logs.length-(ui.logN||6)}개 더 보기</button>`:''}</section>
+      ${live?'':`${P.fold('현재 상태',P.recUI)}<section class="card endbox"><button class="btn big" data-a="next">개강 →</button>
         <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
           <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section>`}</div>${sheet}`;
   }
@@ -1486,8 +1499,9 @@ if(typeof document!=='undefined'){
     else if(a==='born'){newLife({...ui.form,tier:ui.form.uni,stats:ui.form.cands[+ui.form.pick]});ui.screen='game';ui.paused=false;}
     else if(a==='gpick')ui.gpick=+v;
     else if(a==='story'){const c=storyCard();if(c){if((c.shown||0)<Array.from(c.body.replace(/\n\n/g,'')).length){c.shown=Array.from(c.body.replace(/\n\n/g,'')).length;save();}else resolve(0);}}
-    else if(a==='next'){ui.paused=false;ui.sheet=null;advance();}
+    else if(a==='next'){ui.paused=false;ui.sheet=null;ui.logN=6;advance();}
     else if(a==='fopen')ui.fopen=!ui.fopen;
+    else if(a==='more')ui.logN=(ui.logN||6)+6;
     else if(a==='sheet')ui.sheet='pick';
     else if(a==='ptab'){ui.ptab=v;const sb=app.querySelector('.sheet-body');if(sb)sb.scrollTop=0;}
     else if(a==='pause')ui.paused=!ui.paused;
