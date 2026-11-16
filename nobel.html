@@ -265,6 +265,21 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .ra{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 0 3px;min-width:0;border:2px solid #d9b8a8;background:var(--surface);color:var(--accent);font-weight:700;font-size:12px;line-height:1.2;white-space:nowrap}
 .ra .ico{width:18px;flex:none}
 .ra:disabled{opacity:.35;cursor:default}
+/* 인게임 화면의 초점 칩·선택 버튼과 선택 시트 (2026-11-16) */
+.ctl{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:3px;flex:none}
+.ctl button{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:2px 8px;padding:9px 8px;background:var(--surface);color:var(--accent);font-weight:700;line-height:1.3;
+  --e:var(--accent);box-shadow:0 -3px 0 var(--e),0 3px 0 var(--e),-3px 0 0 var(--e),3px 0 0 var(--e)}
+.ctl small{font-size:12px;color:var(--muted)}.ctl b{font-size:16px}.ctl i{font-style:normal;font-size:11px}
+.ctl button.on{background:#fdecc4}
+.focbox{padding:8px 10px}.focbox .hint{font-size:13px;padding:6px 10px}
+.sheet-bg{position:fixed;inset:0;z-index:5;background:rgba(74,26,20,.55)}
+.sheet{position:fixed;z-index:6;left:0;right:0;top:64px;bottom:0;max-width:440px;margin:0 auto;display:flex;flex-direction:column;background:var(--surface);border-top:3px solid var(--accent)}
+.sheet>header{display:flex;align-items:center;gap:6px;padding:0 12px 0 6px;border-bottom:2px solid #ead9c4}
+.sheet>header .rtabs{flex:1}
+.sheet>header>button{padding:6px 4px;color:var(--accent);font-weight:700;white-space:nowrap}
+.sheet-body{flex:1;min-height:0;overflow-y:auto;padding:10px 12px 24px}
+.sheet-body .hint{padding:6px 10px;font-size:13px;line-height:1.5;margin:10px 0 6px}.sheet-body .hint small{color:var(--muted)}
+.sheet-note{margin:0 0 8px;font-size:13px;color:var(--muted);text-align:center}
 .tplan{display:grid;grid-template-columns:1fr 1.4fr;align-items:center;border-top:2px solid rgba(253,243,224,.7);padding-top:8px;font-weight:700;text-align:center}
 .tplan span{border-right:2px solid rgba(253,243,224,.7)}
 .tplan b{margin-left:14px;background:var(--accent-ink);color:var(--accent);padding:2px 0}
@@ -844,10 +859,12 @@ function newLife(o){
   save(); return S;
 }
 // 진행 화면이 한 달씩 꺼낸다. 다 꺼낸 다음 한 번 더 부르면 학기가 끝난다.
+// 2026-11-16: 학기 진행 중에 뜨던 팝업 사건(시나리오 카드)은 일단 끈다. true로 바꾸면 다시 나온다.
+const POPUP_EVENTS=false;
 function reveal(){ const P=S.pend; if(!P)return; if(!P.length){S.pend=null;save();return;}
   const m=P.shift(), t=S.t-1;
-  if(m.scenarioSlot){const card=Narrative.draw({turn:t,mo:m.mo,w:m.w});if(card){m.s=split1(Narrative.view(card).body)[0];m.t=undefined;S.q.unshift(card);}}
-  S.log.push({a:20+(t>>1),t,mo:m.mo,w:m.w,s:m.s,month:1,d:m.d,tone:m.t}); S.mid=S.mid||{}; for(const k in m.d||{})S.mid[k]=(S.mid[k]||0)+m.d[k]; if(m.ev)S.q.unshift({k:'event',id:m.ev,mo:m.mo,w:m.w}); save();}
+  if(POPUP_EVENTS&&m.scenarioSlot){const card=Narrative.draw({turn:t,mo:m.mo,w:m.w});if(card){m.s=split1(Narrative.view(card).body)[0];m.t=undefined;S.q.unshift(card);}}
+  S.log.push({a:20+(t>>1),t,mo:m.mo,w:m.w,s:m.s,month:1,d:m.d,tone:m.t}); S.mid=S.mid||{}; for(const k in m.d||{})S.mid[k]=(S.mid[k]||0)+m.d[k]; if(POPUP_EVENTS&&m.ev)S.q.unshift({k:'event',id:m.ev,mo:m.mo,w:m.w}); save();}
 const stg=()=>S.army>0?'군 복무':career()?`${CAREER[S.stage].n} ${Math.floor(S.ss/2)+1}년 차`:S.stage==='ug'?`${Math.floor(S.ss/2)+1}학년`:`${S.stage==='ms'?'석사':'박사'} ${Math.floor(S.ss/2)+1}년 차`;
 function snap(){return{res:S.res,lec:S.lec,eco:S.eco,cha:S.cha,joy:S.joy,money:S.money,home:S.home,n:S.papers.length,f:{lab:S.lab?S.lab.fav:null,rival:S.rival.fav,partner:S.partner?S.partner.fav:null},p:Object.fromEntries((S.ppl||[]).map(x=>[x.n,x.v]))};}
 
@@ -916,7 +933,7 @@ function advance(){
   if(gpa!=null&&gpa>=4)fx({money:SCHOLAR_GPA},'성적 장학금'); // 학점 4.0 이상이면 다음 학기 성적 장학금
   if(gpa!=null){S.gsum=(S.gsum||0)+gpa;S.gn=(S.gn||0)+1;}
   // 학기 결산창: 이번 학기 사건을 다 치른 뒤, 다음 단계 카드(진학·입대 등) 앞에 뜬다. 바뀐 값은 볼 때 계산한다.
-  S.q.push({k:'settle',t:S.t-1,name:semName,b,prog0,n0:b.n,ti0,p0:S.partner&&S.partner.name,gpa,brk:[...new Set(S.brk)],spark:[...new Set(S.spark)],out:inArmy||sick?null:achieve()});
+  S.q.push({k:'settle',t:S.t-1,name:semName,b,prog0,n0:b.n,ti0,p0:S.partner&&S.partner.name,gpa,brk:[...new Set(S.brk)],spark:[...new Set(S.spark)],out:inArmy||sick?null:achieve(),foc:inArmy?'군 복무':ugf()?ugf().n:blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · ')});
   transitions(); save();
 }
 // 학업 토글 5종(하나만 고른다). 초점 보너스 +15: 학업(대학원은 연구) 초점이면 어학·논문·랩 인턴, 대외활동 초점이면 학회·공모전이 잘 된다.
@@ -1259,9 +1276,9 @@ if(typeof document!=='undefined'){
         <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
           <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section></div>`;
   }
-  // 다음 학기 계획 화면: 2026-11-13 시안. 현재 상태 → 능력치 → 능력치 초점 → 다음 상자 순서로 아래로 스크롤된다.
+  // 초점과 선택(투자·관계·학업): 2026-11-16부터 따로 화면을 두지 않고 인게임 화면(progress) 안의 초점 칩과 선택 시트로 보여 준다. picks()는 그 조각들을 만든다.
   const FSUB={lec:'수업과 발표',res:'탐구와 논문',cha:'소통과 만남',eco:'수입과 자산',joy:'휴식과 일상'}, FICO={lec:'강의',res:'연구',cha:'매력',eco:'코인',joy:'행복'};
-  function strategy(){
+  function picks(){
     const ic=(n,p='아이콘-')=>`<img class="ico" src="에셋/${p}${n}.webp" alt="">`, R=S.rec||{aw:{},conf:{}}, FO=['lec','res','cha','eco','joy'], ug=S.stage==='ug';
     const cnt=(o,ks)=>ks.filter(k=>o[k]).map(k=>`${k} ${o[k]}회`).join(' · ')||'없음';
     const recs=[['공모전 수상',cnt(R.aw,['대상','우수상','장려상'])],['학회 발표',cnt(R.conf,['구두','포스터'])],
@@ -1292,47 +1309,45 @@ if(typeof document!=='undefined'){
       ${rl.filter(r=>rt==='all'||(rt==='p')===!!r.p).map(r=>`<div class="rp${r.x.t===S.t?' done':''}"><div class="rpi">${ic(r.x.img||'연인','인물-')}<div><b>${esc(r.n)}</b><small>${rage(r)}세 · ${rkind(r)}</small><small>호감도 <span class="num">${r.v}</span></small></div>
         <div class="hb">${ic('매력')}<div class="meter" style="--bar:var(--gold)"><i style="width:${r.v}%"></i></div></div></div>
         <div class="rag">${Object.keys(RACT).map(a=>`<button class="ra" data-a="rel" data-v="${a}" data-w="${r.w}"${relCan(r.x,r.p,a)?'':' disabled'}>${RI[a]}<span>${RACT[a].n}</span></button>`).join('')}</div></div>`).join('')||'<p class="muted">아직 가까운 사람이 없습니다.</p>'}`;
-    return `${top({t:S.t,name:stg()+' 0학기',b:S},`<div class="tplan"><span class="num">${stg()} ${S.t%2+1}학기</span><b>개강 준비</b></div>`)}
-      <div class="scroll">
-      <div class="sub big"><i class="rule"></i><span>새로운 학기를 준비하자</span><i class="rule"></i></div>
-      <section class="card"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정"></section>
-      <section class="card"><header class="sec"><h2>현재 상태</h2><span>지금까지 쌓아온 기록</span></header><i class="rule"></i>
-        <div class="grp">${ic('성과')}<h3>성과</h3><p><span>누적 평점</span><b class="num">${S.gn?(S.gsum/S.gn).toFixed(1)+' / 4.5':'아직 없음'}</b></p></div>
+    const recUI=`<div class="grp">${ic('성과')}<h3>성과</h3><p><span>누적 평점</span><b class="num">${S.gn?(S.gsum/S.gn).toFixed(1)+' / 4.5':'아직 없음'}</b></p></div>
         <dl class="recs">${recs.map(([k,v])=>`<div><dt>${k}</dt><dd class="num">${esc(v)}</dd></div>`).join('')}</dl>
         <div class="grp">${ic('사람들')}<h3>관계</h3><p><span>함께하는 사람들</span><b class="num">${ppl.length}명</b></p></div>
-        <div>${ppl.map(p=>`<div class="pp">${ic(p[0],'인물-')}<b>${esc(p[1])}</b><span>${p[2]}</span><span class="num">친밀도 <b>${p[3]}</b></span></div>`).join('')}</div>
-        <div class="grp">${ic('코인')}<h3>재정</h3></div>
-        <div class="fin"><div><span>통장 잔고</span><b class="num">${won(S.money)}</b></div><div><span>총자산</span><b class="num">${won(asset(S))}</b></div>
-          <div><span>월 소득</span><b class="num">${won((S.inc0||0)/4)}</b></div><div><span>현재 직책</span><b>${role()}</b></div></div></section>
-      <section class="card"><header class="sec"><h2>능력치</h2></header><i class="rule"></i><div class="sg">${FO.map(cell).join('')}</div></section>
-      <section class="card"><header class="sec"><h2>이번 학기 초점</h2></header><i class="rule"></i>
-        ${S.army>0?`<p class="hint">복무 중에는 초점을 고를 수 없습니다. 남은 기간 ${S.army}학기.</p>`
-        :`<p class="hint">${ug?'이번 학기에 집중할 일을 하나 선택하세요':'이번 학기에 집중할 능력치를 하나 선택하세요'}</p>
-        <div role="radiogroup" aria-label="이번 학기 초점">${(ug?Object.keys(UGF):FO).map(k=>`<button class="fo${ug?' ug':''}${S.focus===k?' on':''}" role="radio" aria-checked="${S.focus===k}" data-a="focus" data-v="${k}">${ic(ug?UGF[k].ico:FICO[k])}
-          <span class="fn"><b>${ug?UGF[k].n:SL(k)}</b><small>${ug?UGF[k].d:FSUB[k]+(k==='joy'&&S.hp<35?' · 체력이 바닥났다':'')}</small></span>${ug?'':`<span class="fc">현재 <b class="num">${Math.round(S[k])}</b></span>`}<span class="fr"><i></i>${S.focus===k?'선택됨':''}</span></button>`).join('')}</div>
-        <div class="ovrb"><span>이번 학기 초점</span><b>${ug?(UGF[S.focus]||{n:'선택 안 함'}).n:FOCUS[S.focus]?SL(S.focus):'선택 안 함'}</b></div>`}</section>
-      ${fold('투자',invUI)}${fold('관계',relUI)}${fold('학업',actUI)}
-      <section class="card endbox"><button class="btn big" data-a="next">다음 →</button>
-        <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
-          <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section></div>`;
+        <div>${ppl.map(p=>`<div class="pp">${ic(p[0],'인물-')}<b>${esc(p[1])}</b><span>${p[2]}</span><span class="num">친밀도 <b>${p[3]}</b></span></div>`).join('')}</div>`;
+    const focUI=S.army>0?`<p class="hint">복무 중에는 초점을 고를 수 없습니다. 남은 기간 ${S.army}학기.</p>`
+      :`<div role="radiogroup" aria-label="학기 초점">${(ug?Object.keys(UGF):FO).map(k=>`<button class="fo${ug?' ug':''}${S.focus===k?' on':''}" role="radio" aria-checked="${S.focus===k}" data-a="focus" data-v="${k}">${ic(ug?UGF[k].ico:FICO[k])}
+          <span class="fn"><b>${ug?UGF[k].n:SL(k)}</b><small>${ug?UGF[k].d:FSUB[k]+(k==='joy'&&S.hp<35?' · 체력이 바닥났다':'')}</small></span>${ug?'':`<span class="fc">현재 <b class="num">${Math.round(S[k])}</b></span>`}<span class="fr"><i></i>${S.focus===k?'선택됨':''}</span></button>`).join('')}</div>`;
+    return{focUI,invUI,relUI,actUI,recUI,fold,focN:S.army>0?'군 복무':ug?(UGF[S.focus]||{n:'선택 안 함'}).n:FOCUS[S.focus]?SL(S.focus):'선택 안 함'};
   }
   // 학기 진행 화면: 한 학기 16주를 2주씩 넘긴다(멘트 한 줄 = 2주). 수치는 학기 시작 때 값이고, 달라진 값은 결산에서 보여 준다.
   const wk=l=>l.w||((l.mo-3)%6+1)*4; // w가 없는 것은 4주 단위이던 예전 저장
   const PAUSE='<svg viewBox="0 0 6 8" width="9" height="12" aria-hidden="true"><path fill="currentColor" d="M0 0h2v8H0zM4 0h2v8H4z"/></svg>', PLAY='<svg viewBox="0 0 6 8" width="9" height="12" aria-hidden="true"><path fill="currentColor" d="M0 0l6 4-6 4z"/></svg>';
+  // live: 학기가 돌아가는 중(결산 카드가 줄에 있다). 아니면 개강 전이고, 개강을 누르면 학기가 시작된다.
+  // 초점·선택은 학기가 시작될 때 반영되므로, 진행 중에 바꾼 것은 다음 학기부터 적용된다.
   function progress(){
-    const c=S.q.find(x=>x.k==='settle'), b=c.b, done=S.pend?8-S.pend.length:8, logs=S.log.filter(l=>l.t===c.t).reverse(), n=S.log.length;
-    const acts=c.name.startsWith('군')?'군 복무':ugf()?ugf().n:blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · ');
+    const live=S.q.find(x=>x.k==='settle'), c=live||{t:S.t,name:`${stg()} ${S.t%2+1}학기`,b:S}, b=c.b, done=!live?0:S.pend?8-S.pend.length:8, logs=live?S.log.filter(l=>l.t===c.t).reverse():[], n=S.log.length, P=picks();
+    const acts=!live?'개강 준비':c.foc||(c.name.startsWith('군')?'군 복무':ugf()?ugf().n:blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · '));
     const kv=(k,v,w)=>`<div class="kv${w?' wide':''}"><span class="chip">${k}</span><b class="num">${v}</b></div>`;
-    const cell=k=>{const v=Math.round(clamp((b[k]??S[k])+((S.mid||{})[k]||0),0,100));return `<div><p><span>${SL(k)}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL[k]}"><i style="width:${v}%"></i></div></div>`;};
+    const cell=k=>{const v=Math.round(clamp((b[k]??S[k])+(live?(S.mid||{})[k]||0:0),0,100));return `<div><p><span>${SL(k)}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL[k]}"><i style="width:${v}%"></i></div></div>`;};
+    const tab=ui.ptab||'투자';
+    const sheet=ui.sheet!=='pick'?'':`<div class="sheet-bg" data-a="close"></div><section class="sheet" role="dialog" aria-label="학기 선택">
+        <header><div class="rtabs" role="tablist">${['투자','관계','학업'].map(k=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" data-a="ptab" data-v="${k}">${k}</button>`).join('')}</div><button data-a="close">닫기</button></header>
+        <div class="sheet-body"><p class="sheet-note">${live?'지금 고른 것은 다음 학기부터 적용된다. ':''}고르는 동안 시간은 멈춰 있다.</p>${{투자:P.invUI,관계:P.relUI,학업:P.actUI}[tab]}</div></section>`;
     return `${top(c,`<div class="tprog"><div><small class="num">${c.t%2+1}학기 · ${done*2} / 16주</small><div class="meter"><i style="width:${done*12.5}%"></i></div></div>
-        <button class="tbtn${ui.paused?' on':''}" data-a="pause" ${S.pend?'':'disabled'}>${PAUSE}일시 정지</button><button class="tbtn" data-a="play" ${S.pend?'':'disabled'}>${PLAY}진행</button></div>`)}
+        <button class="tbtn${ui.paused&&live?' on':''}" data-a="pause" ${S.pend?'':'disabled'}>${PAUSE}일시 정지</button>${live?`<button class="tbtn" data-a="play" ${S.pend?'':'disabled'}>${PLAY}진행</button>`:`<button class="tbtn" data-a="next">${PLAY}개강</button>`}</div>`)}
       <div class="scroll">
       <section class="card"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정">
-        <div class="kv2">${kv('통장 잔고',won(b.money))}${kv('소득','월 '+won(S.led.inc/4))}${kv('재산',won(asset(b)))}${kv('직책',role())}${kv('참여 활동',acts,1)}</div></section>
+        <div class="kv2">${kv('통장 잔고',won(b.money))}${kv('소득','월 '+won((live?S.led.inc:S.inc0||0)/4))}${kv('재산',won(asset(b)))}${kv('직책',role())}${kv('참여 활동',acts,1)}</div></section>
       <section class="card sg">${['lec','res','cha','eco','joy'].map(cell).join('')}</section>
-      ${logs[0]?`<section class="card now${ui.flash===n?' pop':''}"><span class="chip">${logs[0].mo?wk(logs[0])+'주':'소식'}</span><p>${esc(logs[0].s)}</p>${logs[0].sub?`<small>${esc(logs[0].sub)}</small>`:''}${dtxt(logs[0].d)?`<div class="dchips">${dhtml(logs[0].d,'')}</div>`:''}</section>`:''}
-      <section class="card book"><header><h2>학기 기록</h2><span class="muted">최신순</span></header><i class="rule"></i>
-        ${logs.map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><div><b>${esc(l.s)}</b>${l.sub?`<small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?`<small class="dd">${dhtml(l.d)}</small>`:''}</div></div>`).join('')||'<p class="muted" style="text-align:center">새 학기가 시작됐다.</p>'}</section></div>`;
+      <section class="ctl"><button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}"><small>${live?'다음 학기 초점':'초점'}</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▲':'▼'}</i></button>
+        <button data-a="sheet"><small>선택</small><b>투자 · 관계 · 학업</b></button></section>
+      ${ui.fopen?`<section class="card focbox">${live&&!S.army?'<p class="hint">지금 바꾸면 다음 학기부터 적용됩니다</p>':''}${P.focUI}</section>`:''}
+      ${logs[0]?`<section class="card now${ui.flash===n?' pop':''}"><span class="chip">${logs[0].mo?wk(logs[0])+'주':'소식'}</span><p>${esc(logs[0].s)}</p>${logs[0].sub?`<small>${esc(logs[0].sub)}</small>`:''}${dtxt(logs[0].d)?`<div class="dchips">${dhtml(logs[0].d,'')}</div>`:''}</section>`
+        :live?'':`<section class="card now"><span class="chip">개강 전</span><p>초점과 선택을 정하고 개강을 누르면 학기가 시작된다.</p></section>`}
+      ${live?`<section class="card book"><header><h2>학기 기록</h2><span class="muted">최신순</span></header><i class="rule"></i>
+        ${logs.map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><div><b>${esc(l.s)}</b>${l.sub?`<small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?`<small class="dd">${dhtml(l.d)}</small>`:''}</div></div>`).join('')||'<p class="muted" style="text-align:center">새 학기가 시작됐다.</p>'}</section>`
+        :`${P.fold('현재 상태',P.recUI)}<section class="card endbox"><button class="btn big" data-a="next">개강 →</button>
+        <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
+          <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section>`}</div>${sheet}`;
   }
   // 문단별 체크포인트는 저장한다. 화면을 떠나면 타이머를 끊고 이어하기에서 복구한다.
   let storyTimer=null;
@@ -1377,7 +1392,7 @@ if(typeof document!=='undefined'){
   }
   // 지금 어느 화면인가. 같은 화면을 다시 그릴 때는 스크롤 위치를 지킨다.
   const kind=()=>ui.screen!=='game'||!S?ui.screen:S.end?'end':storyCard()?'intro':S.pend?'prog':S.q[0]&&S.q[0].k==='settle'?'settle':S.q.some(c=>c.k==='settle')?'prog':S.q[0]&&S.q[0].k==='offers'?'offers':'plan';
-  const game=()=>({intro:prologue,end:ending,prog:progress,settle:()=>settle(S.q[0]),plan:strategy,offers:gradResult})[kind()]();
+  const game=()=>({intro:prologue,end:ending,prog:progress,settle:()=>settle(S.q[0]),plan:progress,offers:gradResult})[kind()]();
   const DECISION_TITLES={
     m_night:'중간고사 전날',m_present:'조별 발표의 주인공',m_gig:'하루짜리 아르바이트',m_senior:'선배의 저녁 초대',m_weekend:'아무 일정 없는 주말',
     m_lab:'랩 미팅의 질문',m_appeal:'조교실에 찾아온 학생',m_receipt:'정산 마감 하루 전',m_collab:'함께 연구하자는 제안',m_vacation:'답장 없는 휴가 신청',
@@ -1439,13 +1454,13 @@ if(typeof document!=='undefined'){
     if(changed||!wasOpen)decisionDialog.querySelector('#decision-title').focus({preventScroll:true});
   }
   function render(){clearTimeout(storyTimer);storyTimer=null;clearTimeout(ui.examTimer);
-    if(ui.screen==='exam'&&ui.examStep<EXAMS.length)ui.examTimer=setTimeout(()=>{if(ui.screen==='exam'){ui.examStep++;render();}},ui.examStep?1100:700);const k=kind(), sc=app.querySelector('.scroll'), y=k===ui.kind&&sc?sc.scrollTop:0; ui.kind=k;
+    if(ui.screen==='exam'&&ui.examStep<EXAMS.length)ui.examTimer=setTimeout(()=>{if(ui.screen==='exam'){ui.examStep++;render();}},ui.examStep?1100:700);const k=kind(), sc=app.querySelector('.scroll'), y=k===ui.kind&&sc?sc.scrollTop:0, sb=app.querySelector('.sheet-body'), sy=sb?sb.scrollTop:0; ui.kind=k;
     const active=document.activeElement, returnAction=active&&app.contains(active)&&active.dataset.a?{a:active.dataset.a,v:active.dataset.v}:null;
-    app.innerHTML=ui.screen==='game'&&S?game():home();syncDecision(returnAction); ui.flash=0; if(y)app.querySelector('.scroll').scrollTop=y;
+    app.innerHTML=ui.screen==='game'&&S?game():home();syncDecision(returnAction); ui.flash=0; if(y)app.querySelector('.scroll').scrollTop=y; if(sy){const nb=app.querySelector('.sheet-body'); if(nb)nb.scrollTop=sy;}
     if(k==='intro')animateStory();
     if(S&&S.pend&&!ui.timer)ui.timer=setInterval(tick,900); else if((!S||!S.pend)&&ui.timer){clearInterval(ui.timer);ui.timer=null;}}
   const waiting=()=>{const c=S.q[0];return c&&(c.k==='event'||c.ev);};
-  function tick(){ if(!S||!S.pend||ui.screen!=='game'||ui.paused||waiting()){if(!S||!S.pend)render();return;} reveal(); ui.flash=S.log.length; render(); }
+  function tick(){ if(!S||!S.pend||ui.screen!=='game'||ui.paused||ui.sheet||waiting()){if(!S||!S.pend)render();return;} reveal(); ui.flash=S.log.length; render(); }
   app.addEventListener('toggle',e=>{const d=e.target; if(d.tagName==='DETAILS'&&d.dataset.k)ui.fold[d.dataset.k]=d.open;},true); // 다시 그려도 펼침 상태를 지킨다
   app.addEventListener('input',e=>{const k=e.target.dataset.k;if(k)ui.form[k]=e.target.value;});
   function onAction(e){
@@ -1457,7 +1472,10 @@ if(typeof document!=='undefined'){
     else if(a==='born'){newLife({...ui.form,tier:ui.form.uni,stats:ui.form.cands[+ui.form.pick]});ui.screen='game';ui.paused=false;}
     else if(a==='gpick')ui.gpick=+v;
     else if(a==='story'){const c=storyCard();if(c){if((c.shown||0)<Array.from(c.body.replace(/\n\n/g,'')).length){c.shown=Array.from(c.body.replace(/\n\n/g,'')).length;save();}else resolve(0);}}
-    else if(a==='next'){ui.paused=false;advance();}
+    else if(a==='next'){ui.paused=false;ui.sheet=null;advance();}
+    else if(a==='fopen')ui.fopen=!ui.fopen;
+    else if(a==='sheet')ui.sheet='pick';
+    else if(a==='ptab'){ui.ptab=v;const sb=app.querySelector('.sheet-body');if(sb)sb.scrollTop=0;}
     else if(a==='pause')ui.paused=!ui.paused;
     else if(a==='play'){ui.paused=false; if(S.pend&&!waiting()){reveal();ui.flash=S.log.length;}} // 기다리지 않고 바로 2주를 넘긴다
     else if(a==='res'){const current=view(), i=Number(v);if(!Number.isInteger(i)||!current||!current.ch[i]||current.ch[i].lock)return;resolve(i);ui.gpick=0;}
