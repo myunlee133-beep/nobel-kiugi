@@ -167,6 +167,8 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .tbtn.on{background:#f0ad45}
 .tbtn:disabled{opacity:.5;cursor:default}
 .view{display:block;width:100%;height:auto}
+.pg{padding:8px 10px;gap:6px}
+.pg .view{height:84px;object-fit:cover;object-position:center 70%}
 .kv2{display:grid;grid-template-columns:1fr 1fr;column-gap:14px}
 .kv{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2px 8px;padding:7px 0;border-bottom:2px solid #ead9c4}
 .kv b{font-size:16px;white-space:nowrap}
@@ -178,7 +180,16 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .sg p{display:flex;flex-direction:column;line-height:1.15}
 .sg p span{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
 .sg p b{font-size:16px;line-height:1.2}
-.sg .meter{height:4px}
+.sg .meter{height:4px;display:flex}
+.sg .meter i.gu{background:#ffc83d;box-shadow:0 0 0 1px #b4730d}
+.sg .meter i.gd{background:repeating-linear-gradient(135deg,#c9372c 0 2px,#f3b4ae 2px 4px)}
+.sg p span em{font-style:normal;font-size:11px;margin-left:2px}
+@media (prefers-reduced-motion:no-preference){
+  .sgs>div.pop em{animation:dltRise .9s ease-out}
+  .sgs>div.gu .meter i.gu{animation:gainPulse .9s ease-out}
+}
+@keyframes dltRise{0%{opacity:0;transform:translateY(6px)}25%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes gainPulse{0%,40%{filter:brightness(1.8)}100%{filter:none}}
 /* 진행바 줄: 헤더 밖. 진행 막대 + 일시정지·배속 */
 .pbar{display:flex;align-items:center;gap:8px;margin:0 3px;flex:none}
 .pbar .pt{flex:1;min-width:0}
@@ -188,8 +199,8 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .pbar .tbtn{padding:5px 7px;min-width:30px;justify-content:center;font-size:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .pbar .tbtn.on{background:var(--accent);color:var(--accent-ink)}
 .pbar .tbtn.go{padding:6px 14px;font-size:14px;background:var(--accent);color:var(--accent-ink)}
-.idl{display:flex;align-items:baseline;gap:8px;margin:0;padding:2px 4px 0;font-size:16px}
-.idl b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.idl{display:flex;align-items:baseline;gap:8px;margin:0;padding:0 2px;font-size:15px}
+.idl b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .idl i{font-style:normal;color:var(--muted)}
 .book{gap:6px}
 .book>header{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -203,10 +214,10 @@ select{padding-right:36px;background:var(--bg) url("data:image/svg+xml,%3Csvg xm
 .book .more{align-self:center;padding:4px 8px}
 .book .focbox{margin:2px 0 6px}
 .book .ctl{flex-direction:row;gap:6px}
-.mny{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0 0;padding:6px 4px 0;border-top:1px dotted var(--line)}
-.mny span{display:flex;flex-direction:column;min-width:0}
+.mny{display:flex;justify-content:space-between;gap:6px;margin:0;padding:5px 2px 0;border-top:1px dotted var(--line)}
+.mny span{display:flex;align-items:baseline;gap:4px;min-width:0}
 .mny small{font-size:11px;color:var(--muted)}
-.mny b{font-size:15px;white-space:nowrap}
+.mny b{font-size:13px;white-space:nowrap}
 .book>header h2{font-size:22px}
 .rec{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:10px 8px;border-bottom:2px solid #ead9c4}
 .rec>span{min-width:3.4em;padding:2px 6px;background:#fbe3c0;color:var(--accent);font-weight:700;text-align:center}
@@ -1290,10 +1301,10 @@ if(typeof document!=='undefined'){
         <ul class="fxl dot">${lines.map(([n,v])=>`<li><span>${esc(n)}</span><b class="num ${cl(v)}">${sgw(v)}</b></li>`).join('')||'<li><span class="muted">돈이 오가지 않았다</span></li>'}</ul></div>`,sgw(net))}
       ${FD('s_rel','관계',`<ul class="lv">${ppl.map(p=>`<li><span>${p[2]}</span><div><b>${esc(p[1])} · 친밀도 <span class="num">${p[4]}</span>${dv(p)?` <em class="num ${cl(dv(p))}">${sg(dv(p))}</em>`:''}</b><small>${p[6]?'신규 · ':''}${esc(p[3])}</small></div></li>`).join('')}</ul>
         ${bye?`<p class="muted fxn">${josa(esc(c.p0)+'와(과) 헤어졌다.')}</p>`:''}`,relNote)}
-      ${FD('s_state','현재 상태',picks().recUI,'')}</div>
+      ${FD('s_state','현재 상태',picks().recUI,'')}
       <section class="card endbox"><button class="btn big" data-a="res" data-v="0">다음 학기 →</button>
         <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
-          <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section>`;
+          <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section></div>`;
   }
   // 초점과 선택(투자·관계·학업): 2026-11-16부터 따로 화면을 두지 않고 인게임 화면(progress) 안의 초점 칩과 선택 시트로 보여 준다. picks()는 그 조각들을 만든다.
   const FSUB={lec:'수업과 발표',res:'탐구와 논문',cha:'소통과 만남',eco:'수입과 자산',joy:'휴식과 일상'}, FICO={lec:'강의',res:'연구',cha:'매력',eco:'코인',joy:'행복'};
@@ -1355,7 +1366,10 @@ if(typeof document!=='undefined'){
     const live=S.q.find(x=>x.k==='settle'), c=live||{t:S.t,name:`${stg()} ${S.t%2+1}학기`,b:S}, b=c.b, done=!live?0:S.pend?8-S.pend.length:8, logs=live?S.log.filter(l=>l.t===c.t).reverse():[], n=S.log.length, P=picks();
     const acts=!live?'개강 준비':c.foc||(c.name.startsWith('군')?'군 복무':ugf()?ugf().n:blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · '));
     const kv=(k,v,w)=>`<div class="kv${w?' wide':''}"><span class="chip">${k}</span><b class="num">${v}</b></div>`;
-    const cell=k=>{const v=Math.round(clamp((b[k]??S[k])+(live?(S.mid||{})[k]||0:0),0,100));return `<div><p><span>${SL(k)}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL[k]}"><i style="width:${v}%"></i></div></div>`;};
+    // 방금 2주가 지나 능력치가 달라졌으면(ui.flash===n) 오른 만큼은 밝은 구간, 내린 만큼은 빗금 구간으로 보여 주고 +값을 띄운다.
+    const dl=live&&ui.flash===n&&logs[0]&&logs[0].d||{};
+    const cell=k=>{const v=Math.round(clamp((b[k]??S[k])+(live?(S.mid||{})[k]||0:0),0,100)), d=dl[k]||0, ch=Math.abs(d)>=.1, up=d>0, w=Math.min(Math.max(Math.abs(d),6),up?v:100-v); // 보이도록 최소 폭 6%
+      return `<div${ch?` class="pop ${up?'gu':'gd'}"`:''}><p><span>${SL(k)}${ch?` <em class="${up?'up':'down'}">${up?'+':''}${Math.round(d*10)/10}</em>`:''}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL[k]}"><i style="width:${up?v-w:v}%"></i>${ch?`<i class="g${up?'u':'d'}" style="width:${w}%"></i>`:''}</div></div>`;};
     const tab=ui.ptab||'투자';
     const sheet=ui.sheet!=='pick'?'':`<div class="sheet-bg" data-a="close"></div><section class="sheet" role="dialog" aria-label="학기 선택">
         <header><div class="rtabs" role="tablist">${['투자','관계','학업'].map(k=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" data-a="ptab" data-v="${k}">${k}</button>`).join('')}</div><button data-a="close">닫기</button></header>
@@ -1366,7 +1380,7 @@ if(typeof document!=='undefined'){
         <div class="pc">${live?`<button class="tbtn${ui.paused?' on':''}" data-a="pause" ${run?'':'disabled'} aria-label="일시 정지">${PAUSE}</button>`:`<button class="tbtn go" data-a="next">${PLAY}개강</button>`}
           ${live?SPD.map(x=>`<button class="tbtn sp${(ui.speed||1)===x?' on':''}" data-a="speed" data-v="${x}" aria-label="${x}배속">${x}×</button>`).join('')+`<button class="tbtn" data-a="play" ${run?'':'disabled'} aria-label="다음 2주">»</button>`:''}</div></section>
       <div class="scroll">
-      <section class="card"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정">
+      <section class="card pg"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정">
         <p class="idl"><b>${age()}세</b><i>·</i><b>${role()}</b><i>·</i><b>${esc(S.lab?S.lab.school:UG[S.ugTier]?UG[S.ugTier].n:'')}</b></p>
         <p class="mny"><span><small>총 자산</small><b class="num">${won(asset(S))}</b></span><span><small>월 소득</small><b class="num up">${won(((live?S.led.inc:S.inc0)||0)/4)}</b></span><span><small>월 비용</small><b class="num down">${won(((live?S.led.exp:S.exp0)||0)/4)}</b></span></p></section>
       <section class="card sg"><div class="sgs">${['lec','res','cha','eco','joy'].map(cell).join('')}</div></section>
