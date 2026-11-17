@@ -1092,7 +1092,7 @@ function advance(){
 const CONF=['미래과학자연합','청년과학포럼','한빛융합학술회','새벽탐구회','푸른별과학회','알파연구포럼'], LANG_KEEP=4; // 어학 성적은 4학기(2년)만 유효
 const ACTS={
   conf:{n:'학회',ico:'발표',f:'out',d:'매력·연구력이 높을수록 붙는다. 매력이 낮으면 떨어질 수 있다',p:()=>15+S.cha*.7+S.res*.4},
-  lang:{n:'어학 시험',ico:'영어',f:'study',d:'연구력이 높을수록 점수가 오른다. 유학·교환학생에 필요하며 2년만 유지된다'},
+  lang:{n:'어학 시험',ico:'영어',f:'study',d:'강의력이 높을수록 점수가 오른다. 유학·교환학생에 필요하며 2년만 유지된다'},
   contest:{n:'공모전 참가',ico:'수상',f:'out',d:'영업력·연구력·매력·강의력이 높을수록 수상 확률이 오른다'},
   paper:{n:'논문 쓰기',ico:'논문',f:'study',d:'연구력이 높을수록 논문 등급·피인용수·저널 등급이 오른다'},
   intern:{n:'랩 인턴 참가',ico:'연구',f:'study',d:'매력·연구력이 높을수록 붙는다. 지도 교수와 인연이 생긴다',p:()=>10+S.cha*.5+S.res*.7}};
@@ -1102,7 +1102,7 @@ const langLeft=()=>S.lang?S.lang.t+LANG_KEEP-S.t:0, langOk=()=>langLeft()>0;
 function actRow(id,ok){ if(!id||!ACTS[id])return null; const A=ACTS[id], b=fbon(id), R=S.rec=S.rec||{aw:{},conf:{}}, T=S.t-1, avg=(S.eco+S.res+S.cha+S.lec)/4;
   if(id==='conf'){ const nm=pick(CONF); if(!(ok??roll(pAct(id))))return[A.ico,'학회 결과',nm,'탈락'];
     const f=S.res+b>=45?'구두':'포스터'; R.conf[f]=(R.conf[f]||0)+1; return[A.ico,'학회 결과',nm,f+' 발표']; }
-  if(id==='lang'){ const sc=clamp(Math.round((350+S.res*6+S.lec+(S.lingo||0)*4+rnd()*90+b*4)/5)*5,300,990); S.lang={score:sc,t:T}; return[A.ico,'어학 시험','TOEIC (2년간 유효)',sc+'점']; }
+  if(id==='lang'){ const sc=clamp(Math.round((350+S.lec*7+(S.lingo||0)*4+rnd()*90+b*4)/5)*5,300,990); S.lang={score:sc,t:T}; return[A.ico,'어학 시험','TOEIC (2년간 유효)',sc+'점']; }
   if(id==='contest'){ const sc=avg*1.2+rnd()*30+b, aw=sc>=75?'대상':sc>=60?'우수상':sc>=45?'장려상':sc>=32?'본선 진출':'탈락';
     if(/상$/.test(aw))R.aw[aw]=(R.aw[aw]||0)+1; return[A.ico,'공모전 결과',grad()?'대학원생 연구 공모전':'대학생 연구 공모전',aw]; }
   if(id==='paper'){ const q=S.res*.9+rnd()*25+b, ji=JOURNAL.map(j=>j.req).filter(r=>S.res*.9+rnd()*25+b>=r).length-1;
