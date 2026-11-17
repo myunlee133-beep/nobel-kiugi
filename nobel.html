@@ -497,9 +497,42 @@ p{margin:0}
 .uresult .ur-list{flex:1;min-height:0;gap:8px}
 .uresult .ucard{flex:1;min-height:0;justify-content:space-between;gap:6px;padding:8px 12px;outline-offset:-6px}
 .uresult .uc-top{grid-template-columns:44px 1fr auto;padding-bottom:6px}
-.pc-top{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px}.pc-top.solo{grid-template-columns:1fr}.pc-top img{width:64px;height:64px;object-fit:contain;image-rendering:pixelated}
-.pc-d{font-weight:400!important;color:var(--ink)!important;font-size:13px}
-.pcard .uc-name b{font-size:21px}
+/* 인물 카드: 에셋/인물카드 시안 */
+.pcard{overflow:hidden}.pc{flex:1;min-height:0;background:var(--surface);border:3px solid var(--accent);outline:2px solid #c45a74;outline-offset:-9px;border-radius:10px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:8px}
+.pc-hero{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.pc-photo{height:min(24dvh,200px);aspect-ratio:3/4;border:3px solid var(--gold);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--gold);background:#f4dfc0;overflow:hidden}
+.pc-photo img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}
+.pc-id{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pc-id h1{font-size:min(34px,9vw);color:var(--accent);line-height:1.1;word-break:keep-all}
+.pc-id .rule{display:block;height:2px;background:var(--gold)}
+.pc-lab{font-size:13px;color:var(--ink)}
+.pc-major{border:2px solid var(--gold);border-radius:6px;background:#fff8ec;text-align:center;font-size:19px;font-weight:700;padding:6px 4px}
+.pc-ribbon{display:flex;justify-content:center;gap:0;background:var(--accent);color:var(--accent-ink);border-radius:4px;box-shadow:0 3px 0 var(--edge);font-size:17px;font-weight:700}
+.pc-ribbon span,.pc-ribbon b{padding:6px 22px;color:var(--accent-ink)}.pc-ribbon span{border-right:2px solid #c45a74;color:#f0c65a}
+.pc-td{margin:-4px 0 0;text-align:center;font-size:12px;color:var(--muted)}
+.pc-h{white-space:nowrap;font-size:17px;color:var(--accent);display:flex;align-items:baseline;gap:8px;padding-bottom:4px;border-bottom:2px solid var(--gold)}
+.pc-h small{font-size:11px;font-weight:400;color:inherit;opacity:.85}
+.pc-rows{flex:1;justify-content:space-around;list-style:none;margin:0;padding:2px 8px;border:2px solid var(--gold);border-radius:6px;display:flex;flex-direction:column}
+.pc-rows li{display:grid;grid-template-columns:8.5em 1fr;align-items:center;padding:5px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.pc-rows li:last-child{border:0}
+.pc-rows i{font-style:normal;font-weight:700;border-right:2px solid var(--muted);margin-right:10px}
+.pc-rows b{color:var(--ink)}
+.pc-fam{background:var(--accent);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.pc-fam .pc-h{color:var(--accent-ink);border-color:#c45a74}
+.pc-cols{display:grid;grid-template-columns:repeat(3,1fr);background:#fff8ec;border:2px solid var(--gold);border-radius:6px}
+.pc-cols>div{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 2px;text-align:center}
+.pc-cols>div+div{border-left:2px solid var(--line)}
+.pc-cols i{font-style:normal;font-size:12px;font-weight:700;color:var(--accent);background:#fbe3c0;border-radius:4px;padding:2px 6px}
+.pc-cols b{font-size:19px;color:var(--ink)}
+@media(max-height:700px){.pc{padding:10px 14px;gap:5px}.pc-td{display:none}.pc-photo{height:17dvh}.pc-id{gap:3px}.pc-id h1{font-size:26px}.pc-major{padding:2px;font-size:16px}
+.pc-ribbon{font-size:15px}.pc-ribbon span,.pc-ribbon b{padding:3px 18px}.pc-h{font-size:15px;padding-bottom:2px}.pc-rows li{padding:2px;font-size:13px}.pc-fam{padding:6px;gap:4px}.pc-cols>div{padding:4px 2px;gap:3px}.pc-cols b{font-size:16px}}
+.pc-talent{display:inline-flex;align-items:center;gap:6px;margin-top:5px;padding:2px 9px;border:1px solid var(--gold);border-radius:999px;background:#fbe3c0;color:var(--accent);font-size:12px;font-weight:800;width:max-content}
+.pc-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+.pc-money>span{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 7px;background:#fbe3c0;border:1px solid #e2c49a;border-radius:6px;text-align:center}
+.pc-money i{font-style:normal;color:var(--muted);font-size:11px;font-weight:700}
+.pc-money b{color:var(--accent);font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.pc-household{font-size:13px;color:var(--ink);margin:4px 0 0}
+@media(max-width:360px){.pc-money{gap:4px}.pc-money>span{padding:7px 4px}.pc-money b{font-size:13px}}
 .uc-emb{width:44px;height:44px;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-size:22px;font-weight:700;border-radius:50%;box-shadow:0 0 0 2px var(--gold)}
 .uresult .uc-name b{font-size:19px}
 .uc-cut{text-align:center;font-size:13px;color:var(--muted)}
@@ -1230,14 +1263,15 @@ if(typeof document!=='undefined'){
       <button class="btn big" data-a="go" data-v="card">이 재능으로 시작하기 →</button>`;}
     // 인물 카드: 재능 선택 다음. 앞에서 정한 것과 집안 형편(이 화면 전에 이미 뽑혀 있다)을 한 장에 모아 보여 준다.
     if(ui.screen==='card'){const f=ui.form, st=f.cands[+f.pick||0], t=talentOf(st), F=FAM_INFO[f.family];
-      return `<header class="top"><div class="trow"><button class="homebtn" data-a="go" data-v="talent" aria-label="뒤로">${BACK}</button><span class="tage">20세 · 입학 전</span><b class="who">${esc(f.name||'김연구')}</b><span class="ovr">OVR<b class="num">${ovr(st)}</b></span></div></header>
-      <div class="scroll pcard">
-        <div class="thead"><h1>인물 카드</h1><p>이 사람의 이야기가 시작됩니다</p></div>
-        <section class="panel frame"><div class="pc-top"><img src="에셋/재능-${t}.webp" alt=""><span class="uc-name"><b>${esc(f.name||'김연구')}</b><small>${f.gender}성 · 20세 · ${esc(f.field)} 지망</small></span></div><i class="rule" aria-hidden="true"></i>
-          <span class="uc-rows"><span><i>재능형</i><b>${t}</b></span><span><i></i><b class="pc-d">${TALENT_D[t]}</b></span><span><i>출신 고교</i><b>${HS[+f.hs||0].n} (${HS[+f.hs||0].d})</b></span><span><i>고향</i><b>${HOME[+f.home||0]}</b></span></span></section>
-        <section class="panel frame"><div class="pc-top solo"><span class="uc-name"><b>집안 형편 · ${FAMILY[f.family]}</b><small>${F.d}</small></span></div><i class="rule" aria-hidden="true"></i>
-          <span class="uc-rows"><span><i>소득 분위</i><b class="num">${f.decile}분위</b></span><span><i>월 용돈</i><b class="num">${F.allow?F.allow+'만 원':'없음'}</b></span><span><i>시작 자산</i><b class="num">${F.assets?won(F.assets):'0원'}</b></span></span></section>
-      </div>
+      return `<div class="scroll pcard"><article class="pc">
+        <div class="pc-hero"><div class="pc-photo"><img src="에셋/고3-학생.webp" alt=""></div>
+          <div class="pc-id"><h1>${esc(f.name||'김연구')}</h1><i class="rule" aria-hidden="true"></i><p class="pc-lab">진학 희망 전공</p><div class="pc-major">${esc(f.field)}과</div></div></div>
+        <div class="pc-ribbon"><span>특기</span><b>${t}</b></div><p class="pc-td">${TALENT_D[t]}</p>
+        <h2 class="pc-h">기본 정보</h2>
+        <ul class="pc-rows"><li><i>성별</i><b>${f.gender}성</b></li><li><i>나이</i><b>20세 (대학 입학 예정)</b></li><li><i>출신 고등학교</i><b>${HS[+f.hs||0].n} (${HS[+f.hs||0].d})</b></li><li><i>출신지</i><b>${HOME[+f.home||0]}</b></li></ul>
+        <section class="pc-fam"><h2 class="pc-h">가정 배경 <small>${FAMILY[f.family]}</small></h2>
+          <div class="pc-cols"><div><i>가구 소득 분위</i><b class="num">${f.decile}분위</b></div><div><i>월 용돈</i><b class="num">${F.allow?F.allow+'만 원':'없음'}</b></div><div><i>초기 보유 자산</i><b class="num">${F.assets?won(F.assets):'0원'}</b></div></div></section>
+      </article></div>
       <button class="btn big" data-a="go" data-v="exam">고3 시절로 →</button>`;}
     if(ui.screen==='exam'){const f=ui.form, E=f.exam, n=ui.examStep, done=n>=EXAMS.length;
       const say=['고3이 시작되었다. 첫 모의고사가 다가온다.','첫 성적표를 받았다. 아직 시간은 있다.','6월 모의고사. 여름이 지나면 금방이다.','9월 모의고사. 이제 수능만 남았다.','수능을 마쳤다. 이제 다음 문을 열 차례다.'][n];
