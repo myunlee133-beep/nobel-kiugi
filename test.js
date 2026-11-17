@@ -8,11 +8,14 @@ for(let n=0;n<N;n++){
   while(!S.end){ assert(++guard<2000,'끝나지 않는 인생 seed '+n);
     const v=G.view();
     if(v){ // 은퇴 선택지는 고르지 않는 평범한 플레이어
-      const ok=v.ch.map((c,i)=>i).filter(i=>!/은퇴/.test(v.ch[i].l)&&!v.ch[i].lock); G.resolve(ok[Math.floor(Math.random()*ok.length)]); continue; }
+      let ok=v.ch.map((c,i)=>i).filter(i=>!/은퇴/.test(v.ch[i].l)&&!v.ch[i].lock); if(!ok.length)ok=v.ch.map((c,i)=>i).filter(i=>!v.ch[i].lock); G.resolve(ok[Math.floor(Math.random()*ok.length)]); continue; }
     if(S.pend){ G.reveal(); continue; } // 진행 화면이 달을 하나씩 꺼내는 자리
-    if(S.army===0&&S.stage==='ug'){ // 학부생: 학기 전략. 12~21학점, 행동은 아무거나 넣고 맞춘다. 칸을 넘기면 안 된다
-      S.plan={cred:12+Math.floor(Math.random()*10),acts:Object.keys(G.SA).filter(()=>Math.random()<.3)}; G.fitPlan();
-      assert(G.used()<=G.slots()&&S.plan.cred>=12,'슬롯 초과 seed '+n); for(const id of S.plan.acts)assert(!G.SA[id].lock?.(),'잠긴 행동 '+id); }
+    if(S.army===0&&['ug','ms','phd'].includes(S.stage)){ // 학부생·대학원생: 학기 전략. 학점(대학원은 개인 연구)과 행동은 아무거나 넣고 맞춘다. 칸을 넘기면 안 된다
+      S.plan={cred:12+Math.floor(Math.random()*10),rs:3+Math.floor(Math.random()*16),acts:Object.keys(G.SA).filter(()=>Math.random()<.3)}; G.fitPlan();
+      assert(G.used()<=G.slots(),'슬롯 초과 seed '+n); for(const id of S.plan.acts)assert(!G.SA[id].lock?.()||G.must(id),'잠긴 행동 '+id);
+      if(S.stage==='ug')assert(S.plan.cred>=12,'학점 12 이상 seed '+n);
+      else{ assert.strictEqual(S.plan.cred,S.stage==='phd'&&S.ss>=4?3:9,'대학원 학점 고정'); for(const id of['ind','ta'])if(G.must(id))assert(S.plan.acts.includes(id),'연구실 의무 '+id);
+        for(const id of S.plan.acts)assert(G.SA[id].only!=='ug','대학원에 학부 행동 '+id); } }
     else if(S.army===0){ // 대학원생, 평범한 플레이어: 학업 위주, 체력이 낮으면 휴식을 늘린다. 5% 단위로 합 100.
       const A=S.alloc, k=['lec','eco','rel','rest']; const rest=S.hp<45?30:5*Math.floor(Math.random()*4);
       A.study=S.stage==='ug'?5*(6+Math.floor(Math.random()*5)):5*(10+Math.floor(Math.random()*6)); let left=100-A.study-rest; A.rest=rest; for(const x of k.slice(0,3)){A[x]=0;}
@@ -55,9 +58,14 @@ console.log('조사·문장 나누기 점검 통과');
   assert(G.SA.work.lock(),'9분위 근장'); S.decile=3; assert(!G.SA.work.lock(),'3분위 근장'); assert(G.SA.love.lock(),'썸 없이 연애'); S.crush={name:'하린'}; assert(!G.SA.love.lock(),'썸이면 연애');
   S.plan={cred:21,acts:['job','gym']}; G.fitPlan(); assert.strictEqual(S.plan.cred,18,'학점 상한 18'); S.hp=0; G.fitPlan(); assert(G.used()<=20,'체력 0이면 20칸'); }
 console.log('학기 전략 점검 통과');
-// 대학원 원서: 3곳을 한꺼번에 판정하고, 모두 떨어지면 가장 낮은 곳이 추가 합격. 합격한 곳 중 고른 곳으로 간다
+// 대학원 원서: 실제 대학 20곳을 판정해 합격한 3곳만 보여 준다. 모자라면 평판 낮은 곳이 추가 합격. 고른 곳으로 간다
 { G.newLife({seed:11,gender:'여'}); const S=G.S; S.q=[]; S.res=0; S.luck=-10; const c=G.offers(); assert(c.list.some(o=>o.ok),'원서 합격 보장');
-  S.q=[c]; const ok=c.list.filter(o=>o.ok); G.resolve(ok.length-1); assert.strictEqual(S.stage,'ms'); assert.strictEqual(S.lab.pres,ok[ok.length-1].pres); assert(S.lab.prof,'지도교수 이름'); }
+  assert.strictEqual(c.list.length,3,'합격한 곳은 늘 3곳'); assert(c.list.every(o=>o.ok),'화면에는 합격한 곳만');
+  S.q=[c]; const ok=c.list; G.resolve(2); assert.strictEqual(S.stage,'ms'); assert.strictEqual(S.lab.school,ok[2].n); assert(S.lab.prof,'지도교수 이름'); }
+// 랩 인턴 인연: 학부 대학에 붙으면 3곳 안에 그 연구실이 들어간다. 실력이 좋으면 평판 높은 곳 위주로 붙는다
+{ let home=0, top=0; for(let n=0;n<200;n++){ G.newLife({seed:200+n,gender:'여',uni:9}); const S=G.S; S.flags.known=1; S.res=60;
+    const c=G.offers(); assert.strictEqual(c.list.length,3); if(c.list.some(o=>o.home&&o.n===S.uni.n))home++; if(c.list[0].urep>=92)top++; }
+  assert(home>150,'인연 연구실이 대부분 보인다 '+home); assert(top>150,'연구력 60이면 최상위권 합격 '+top); }
 // 박사 이후: 포닥 → 조교수 → 부교수(정년 보장) → 정교수
 { G.newLife({seed:5,gender:'여'}); const S=G.S; S.q=[]; S.stage='phd'; S.lab={school:'한국대',pres:3,type:'은인형',fav:3}; S.res=100; S.lec=100; S.luck=10; S.papers=[{pt:40}];
   S.q=[{k:'phdDone'}]; G.resolve(0); assert.strictEqual(S.stage,'pd'); S.q=[];

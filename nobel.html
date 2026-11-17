@@ -558,6 +558,7 @@ p{margin:0}
 .uc-info i{font-style:normal;font-size:11px;color:var(--muted)}.uc-info b{font-size:15px;color:var(--accent)}
 @media(max-width:360px){.uc-top{grid-template-columns:54px 1fr auto}.uc-top img{width:54px}.uc-name b{font-size:18px}.uc-foot b{font-size:18px}}
 /* 대학원 진학 결과: 에셋/진학-결과-시안-대학원. .ucard 틀을 같이 쓴다. */
+.scroll.uresult{overflow-y:auto}.scroll.uresult .ur-list,.scroll.uresult .ucard{flex:none} /* 연구실 카드는 키가 커서 줄이지 않고 스크롤한다 */
 .gc-top{display:grid;grid-template-columns:52px auto minmax(0,1fr) auto;align-items:center;gap:6px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
 .gc-bld{width:52px;height:auto;image-rendering:pixelated;border-right:2px solid var(--gold);padding-right:6px}
 .gc-school{font-size:20px;color:var(--accent);white-space:nowrap}
@@ -570,6 +571,7 @@ p{margin:0}
 .gc-prof{border-bottom:1px solid var(--line);padding-bottom:4px}.gc-prof b{font-size:22px;color:var(--accent)}
 .gc-prof em{font-style:normal;font-size:11px;margin-left:6px;padding:1px 6px;border:2px solid var(--gold);color:var(--gold);vertical-align:.3em}
 .gc-sub b{color:var(--accent);font-size:15px}
+.gc-cond{font-size:12px;color:var(--ink)}.gc-cond b{color:var(--accent)} /* 연구실 조건: 월급·산학·조교 */
 .gc-chips{display:flex;flex-wrap:wrap;gap:6px}
 .gc-chips span{display:flex;align-items:center;gap:6px;background:#fbe3c0;border-radius:999px;padding:3px 12px 3px 6px;font-size:13px;font-weight:700;color:var(--accent)}
 .gc-chips img{width:24px;height:24px;object-fit:contain;image-rendering:pixelated}
@@ -633,10 +635,12 @@ const ADV_TRAIT={방임형:[['노트북','자율적 연구'],['실험','실험 �
 const CAREER={pd:{n:'박사후연구원',pay:2200},ap:{n:'조교수',pay:3000,min:8,need:6,req:55},asc:{n:'부교수',pay:4000,min:8,need:10,req:65}};
 const PD_MIN=2, PD_MAX=8, AP_MAX=12, RETIRE_T=90;
 const ADV={
-  방임형:{d:'일 년에 두 번 마주친다',lock:1,gain:.9,pay:1,sub:0,joy:0},
-  착취형:{d:'연구실에 간이침대가 있다',lock:2,gain:1,pay:.7,sub:0,joy:-3,prog:1.2},
-  스타형:{d:'이름만으로 심사가 부드러워진다',lock:1,gain:1,pay:1,sub:10,joy:0},
-  은인형:{d:'밥은 먹었냐고 묻는다',lock:1,gain:1.15,pay:1,sub:5,joy:2}};
+  방임형:{d:'일 년에 두 번 마주친다',lock:1,gain:.9,pay:1,sub:0,joy:0,mp:[120,200],ir:.6,iq:0,tm:1,tq:0},
+  착취형:{d:'연구실에 간이침대가 있다',lock:2,gain:1,pay:.7,sub:0,joy:-3,prog:1.2,mp:[90,150],ir:.2,iq:1,tm:.5,tq:1},
+  스타형:{d:'이름만으로 심사가 부드러워진다',lock:1,gain:1,pay:1,sub:10,joy:0,mp:[150,230],ir:.4,iq:1,tm:1,tq:0},
+  은인형:{d:'밥은 먹었냐고 묻는다',lock:1,gain:1.15,pay:1,sub:5,joy:2,mp:[140,220],ir:.8,iq:0,tm:1.2,tq:0}};
+// 연구실 조건(대학원 학기 전략): mp 월급 [석사, 박사](만 원), ir 산학과제 지급률, iq 산학 의무, tm 조교비 배율, tq 조교 의무.
+const IND_PAY=500, TA_PAY=150, labC=()=>ADV[S.lab.type];
 const NAMES=['서윤','도현','지안','하준','유나','민재','수아','태오','채원','건우'];
 // NPC 성별: 여성 이름은 '연인' 그림, 남성 이름은 '라이벌' 그림과 짝을 맞춘다.
 const F_NAMES=['서윤','지안','유나','수아','채원','하린','예린','소율'], M_NAMES=['도현','하준','민재','태오','건우','시우','준서','은호'];
@@ -923,33 +927,46 @@ function fixAlloc(){ if(!S.alloc)S.alloc={study:40,lec:15,eco:15,rel:15,rest:15}
 const eff=p=>p<=25?p/25:p<=50?1+(p-25)/25*.7:1.7+(p-50)/50*.5;
 const hpm=p=>p<=25?p/25:1+(p-25)/25*1.25;
 // 능력치 초점: 이번 학기에 집중할 능력치 하나. 시간 배분(S.alloc)을 그쪽으로 기운 틀로 바꾼다. 의무 학업이 모자라면 초점이 아닌 갈래부터 덜어 낸다.
-// 학기 전략(학부생, 2026-11-17): 슬롯(단위 학점) = 20 + 체력 × 0.16. 수강 학점 → 행동 → 남은 칸이 학점 집중도. 과부하는 막는다.
+// 학기 전략(학부생 2026-11-17, 석사·박사 2026-11-17): 슬롯(단위 학점) = 20 + 체력 × 0.16. 과부하는 막는다.
+// 학부: 수강 학점(12~21) → 행동 → 남은 칸이 학점 집중도. 대학원: 학점 고정(9, 박사 5학기부터 3) → 개인 연구(3~18, 논문 진행) → 행동(연구실 의무는 잠김)
+// → 남은 칸이 평점과 논문 퀄리티(S.pq). only: 'ug' 학부 전용, 'gr' 대학원 전용, 없으면 둘 다. 박사후연구원 이후는 아직 시간 배분(S.alloc) 그대로.
 // s: 차지하는 칸, g: 능력치 변화, lock(): 못 고르는 이유(없으면 ''), p(): 학기 초 합격 확률(%) — 떨어지면 그 칸은 집중도로 돌아간다.
 // ponytail: 동아리 임원 사건은 아직 없다. 사건 묶음이 생기면 S.cur.acts에 club이 있는지 읽는다.
 const avgGpa=()=>S.gn?S.gsum/S.gn:0, rec=()=>S.rec=S.rec||{aw:{},conf:{}};
 const SA={
-  job:{n:'알바',s:6,ico:'코인',d:'수입↑ · 체력 −12',g:{eco:5,cha:2,res:-1},hp:-12,joy:-2,money:520,why:'아르바이트',k:'eco'},
+  job:{n:'알바',only:'ug',s:6,ico:'코인',d:'수입↑ · 체력 −12',g:{eco:5,cha:2,res:-1},hp:-12,joy:-2,money:520,why:'아르바이트',k:'eco'},
   gym:{n:'운동',s:2,ico:'행복',d:'다음 학기 회복 +10',hp:0,joy:2,money:-20,why:'운동',k:'rest'},
-  club:{n:'동아리',s:3,ico:'사람들',d:'매력 +4 · 행복 +5',g:{cha:4},hp:-4,joy:5,money:-30,why:'동아리',k:'rel',lock:()=>S.ss===7?'4학년 2학기에는 못 한다':''},
-  lang:{n:'어학 시험',s:3,ico:'영어',d:'어학 실적',hp:-3,k:'study',car:1},
-  contest:{n:'공모전',s:3,ico:'수상',d:'수상 도전',hp:-4,k:'lec',car:1},
-  conf:{n:'학술대회',s:3,ico:'발표',d:'연구력 +2 · 매력 +1',g:{res:2,cha:1},hp:-6,money:-30,why:'학회 참가비',k:'study',car:1,lock:()=>S.ss<2&&!rec().intern?'2학년부터 (랩 인턴 경험이 있으면 가능)':'',p:()=>pAct('conf')},
-  intern:{n:'랩 인턴',s:6,ico:'연구',d:'연구력 +5 · 교수 인연',g:{res:5},hp:-12,joy:-2,k:'study',car:1,lock:()=>S.ss<2?'2학년부터':avgGpa()<3.3&&S.res<35?'평균 학점 3.3 또는 연구력 35 필요':'',p:()=>pAct('intern')},
-  work:{n:'근장',s:3,ico:'동전',d:'고정 수입 · 체력 −5',g:{eco:1,lec:1},hp:-5,money:300,why:'근로장학',k:'eco',lock:()=>(S.decile||5)>8?`소득 ${S.decile}분위 · 신청 불가`:S.gpa0!=null&&S.gpa0<2?'직전 학기 학점 2.0 미만':'',p:()=>(S.decile||5)<=3?100:S.decile<=6?80:50},
-  tutor:{n:'과외',s:4,ico:'강의',d:'강의력 +5 · 수입↑',g:{lec:5},hp:-8,money:400,why:'과외',k:'lec',lock:()=>(S.uni?.rep||0)<85&&S.lec<40?'대학 평판 85 또는 강의력 40 필요':''},
+  club:{n:'동아리',s:3,ico:'사람들',d:'매력 +4 · 행복 +5',g:{cha:4},hp:-4,joy:5,money:-30,why:'동아리',k:'rel',lock:()=>S.stage==='ug'&&S.ss===7?'4학년 2학기에는 못 한다':''},
+  lang:{n:'어학 시험',only:'ug',s:3,ico:'영어',d:'어학 실적',hp:-3,k:'study',car:1},
+  contest:{n:'공모전',only:'ug',s:3,ico:'수상',d:'수상 도전',hp:-4,k:'lec',car:1},
+  conf:{n:'학술대회',only:'ug',s:3,ico:'발표',d:'연구력 +2 · 매력 +1',g:{res:2,cha:1},hp:-6,money:-30,why:'학회 참가비',k:'study',car:1,lock:()=>S.ss<2&&!rec().intern?'2학년부터 (랩 인턴 경험이 있으면 가능)':'',p:()=>pAct('conf')},
+  intern:{n:'랩 인턴',only:'ug',s:6,ico:'연구',d:'연구력 +5 · 교수 인연',g:{res:5},hp:-12,joy:-2,k:'study',car:1,lock:()=>S.ss<2?'2학년부터':avgGpa()<3.3&&S.res<35?'평균 학점 3.3 또는 연구력 35 필요':'',p:()=>pAct('intern')},
+  work:{n:'근장',only:'ug',s:3,ico:'동전',d:'고정 수입 · 체력 −5',g:{eco:1,lec:1},hp:-5,money:300,why:'근로장학',k:'eco',lock:()=>(S.decile||5)>8?`소득 ${S.decile}분위 · 신청 불가`:S.gpa0!=null&&S.gpa0<2?'직전 학기 학점 2.0 미만':'',p:()=>(S.decile||5)<=3?100:S.decile<=6?80:50},
+  tutor:{n:'과외',only:'ug',s:4,ico:'강의',d:'강의력 +5 · 수입↑',g:{lec:5},hp:-8,money:400,why:'과외',k:'lec',lock:()=>(S.uni?.rep||0)<85&&S.lec<40?'대학 평판 85 또는 강의력 40 필요':''},
   love:{n:'연애',s:3,ico:'매력',d:'',hp:-3,k:'rel',lock:()=>!S.partner&&!S.crush?'썸 상대가 있어야 한다':''},
-  paper:{n:'논문 쓰기',s:6,ico:'논문',d:'논문 실적',g:{res:2},hp:-10,k:'study',car:1,lock:()=>!rec().intern?'랩 인턴 합격 경험 필요':''}};
-const saD=id=>id!=='love'?SA[id].d:S.partner?'행복 +8 · 친밀도 +1':'행복 +5 · 학기 끝에 고백';
-const slots=()=>20+Math.round(Math.max(S.hp,0)*.16), credCap=()=>S.gpa0>=4?21:18;
-const plan=()=>S.plan||(S.plan={cred:18,acts:[]}), used=(P=plan())=>P.cred+P.acts.reduce((a,id)=>a+SA[id].s,0);
-const stratOn=()=>!!S&&S.stage==='ug'&&!(S.army>0)&&S.hp>0;
-const planSum=(P=S.cur||plan())=>[P.cred+'학점',...P.acts.map(id=>SA[id].n)].join(' · ');
-// 잠긴 행동을 빼고, 칸이 모자라면 뒤에 넣은 행동부터 덜고, 그래도 모자라면 학점을 줄인다(12 아래로는 안 내린다).
-function fitPlan(){ const P=plan(); P.acts=P.acts.filter(id=>SA[id]&&!SA[id].lock?.()); P.cred=clamp(P.cred,12,credCap());
-  while(used(P)>slots()&&P.acts.length)P.acts.pop(); P.cred=Math.max(12,Math.min(P.cred,slots()-used({cred:0,acts:P.acts}))); return P; }
+  paper:{n:'논문 쓰기',only:'ug',s:6,ico:'논문',d:'논문 실적',g:{res:2},hp:-10,k:'study',car:1,lock:()=>!rec().intern?'랩 인턴 합격 경험 필요':''},
+  ind:{n:'산학과제',only:'gr',s:6,ico:'과제',d:()=>`과제비 ${Math.round(labC().ir*100)}% · 영업력 +4`,g:{eco:4,res:1},hp:-10,money:()=>IND_PAY*labC().ir,why:'산학과제',k:'eco'},
+  ta:{n:'조교',only:'gr',s:4,ico:'강의',d:()=>`조교비 ×${labC().tm} · 강의력 +4`,g:{lec:4},hp:-6,money:()=>TA_PAY*labC().tm,why:'수업 조교',k:'lec'}};
+const planMode=()=>!!S&&(S.stage==='ug'||S.stage==='ms'||S.stage==='phd'); // 학기 전략 창을 쓰는 단계
+const saOk=id=>SA[id]&&(!SA[id].only||SA[id].only===(S.stage==='ug'?'ug':'gr'));
+const must=id=>S.stage!=='ug'&&!!S.lab&&(id==='ind'&&!!labC().iq||id==='ta'&&!!labC().tq); // 연구실 의무 행동
+const saD=id=>id!=='love'?(typeof SA[id].d==='function'?SA[id].d():SA[id].d):S.partner?'행복 +8 · 친밀도 +1':'행복 +5 · 학기 끝에 고백';
+const slots=()=>20+Math.round(Math.max(S.hp,0)*.16), credCap=()=>S.gpa0>=4?21:18, gradCred=()=>S.stage==='phd'&&S.ss>=4?3:9;
+const plan=()=>S.plan||(S.plan={cred:18,acts:[]}), used=(P=plan())=>P.cred+(P.rs||0)+P.acts.reduce((a,id)=>a+SA[id].s,0);
+const ggAvg=()=>S.gg&&S.gg.n?S.gg.sum/S.gg.n:0; // 대학원 평점(학부와 따로)
+const stratOn=()=>planMode()&&!(S.army>0)&&S.hp>0;
+const planSum=(P=S.cur||plan())=>[P.cred+'학점',...(P.rs?['연구 '+P.rs+'칸']:[]),...P.acts.map(id=>SA[id].n)].join(' · ');
+// 그 단계에서 못 하거나 잠긴 행동을 빼고, 칸이 모자라면 뒤에 넣은 행동부터 덜고, 그래도 모자라면 학점(대학원은 개인 연구)을 줄인다.
+// 대학원은 연구실 의무 행동을 맨 앞에 넣고 빼지 않는다. 의무가 가장 많은 경우도 학점 9 + 산학 6 + 조교 4 = 19칸이라 최소 슬롯 20에 들어간다.
+function fitPlan(){ const P=plan();
+  if(S.stage==='ug'){ P.rs=0; P.acts=P.acts.filter(id=>saOk(id)&&!SA[id].lock?.()); P.cred=clamp(P.cred,12,credCap());
+    while(used(P)>slots()&&P.acts.length)P.acts.pop(); P.cred=Math.max(12,Math.min(P.cred,slots()-used({cred:0,acts:P.acts}))); return P; }
+  const req=['ind','ta'].filter(must); P.cred=gradCred(); P.rs=clamp(P.rs??9,3,18);
+  P.acts=[...req,...P.acts.filter(id=>!req.includes(id)&&saOk(id)&&!SA[id].lock?.())];
+  while(used(P)>slots()&&P.acts.length>req.length)P.acts.pop(); P.rs=Math.max(0,Math.min(P.rs,slots()-used({cred:P.cred,acts:P.acts}))); return P; }
 // 달별 멘트·관계 판정이 읽는 시간 배분(합 100)을 이번 학기 칸에서 만든다.
-function planAlloc(cur){ const A={study:0,lec:0,eco:0,rel:0,rest:0}, n=cur.cred+cur.f+cur.acts.reduce((a,id)=>a+SA[id].s,0);
-  A.study=cur.cred+cur.f; for(const id of cur.acts)A[SA[id].k]+=SA[id].s; let t=0; for(const k in A){A[k]=Math.round(A[k]/n*100);t+=A[k];} A.study+=100-t; return A; }
+function planAlloc(cur){ const A={study:0,lec:0,eco:0,rel:0,rest:0}, n=cur.cred+(cur.rs||0)+cur.f+cur.acts.reduce((a,id)=>a+SA[id].s,0);
+  A.study=cur.cred+(cur.rs||0)+cur.f; for(const id of cur.acts)A[SA[id].k]+=SA[id].s; let t=0; for(const k in A){A[k]=Math.round(A[k]/n*100);t+=A[k];} A.study+=100-t; return A; }
 const FOCUS={res:['study',60],lec:['lec',40],eco:['eco',40],cha:['rel',40],joy:['rest',40]};
 function focus(f){
   const[k,p]=FOCUS[f], A={study:30,lec:10,eco:10,rel:10,rest:10}; A[k]=p; let need=minStudy()-A.study;
@@ -1003,7 +1020,7 @@ function reveal(){ const P=S.pend; if(!P)return; if(!P.length){S.pend=null;save(
 const stg=()=>S.army>0?'군 복무':career()?`${CAREER[S.stage].n} ${Math.floor(S.ss/2)+1}년 차`:S.stage==='ug'?`${Math.floor(S.ss/2)+1}학년`:`${S.stage==='ms'?'석사':'박사'} ${Math.floor(S.ss/2)+1}년 차`;
 function snap(){return{res:S.res,lec:S.lec,eco:S.eco,cha:S.cha,joy:S.joy,money:S.money,home:S.home,n:S.papers.length,f:{lab:S.lab?S.lab.fav:null,rival:S.rival.fav,partner:S.partner?S.partner.fav:null},p:Object.fromEntries((S.ppl||[]).map(x=>[x.n,x.v]))};}
 
-const payMul=why=>why==='과외'||why==='수업 조교'?.5+S.lec/100:why==='아르바이트'?.5+S.eco/100:1;
+const payMul=why=>why==='과외'||why==='수업 조교'?.5+S.lec/100:why==='아르바이트'||why==='산학과제'?.5+S.eco/100:1;
 function advance(){
   if(S.end||S.q.length||S.pend)return; fixAlloc();
   Narrative.beginTurn();
@@ -1016,12 +1033,15 @@ function advance(){
   }else if(S.hp<=0){ sick=true; S.hosp++; S.hp=55; fx({money:-200,joy:-8},'병원비'); log('과로로 입원');
     msg('입원','응급실 천장을 보며 한 학기를 보냈다. 병원비 200만 원이 나갔다.');
   }else{
-    const ug=S.stage==='ug';
-    if(ug){ // 학기 전략: 지원형 행동은 학기 초에 판정하고, 떨어지면 그 칸은 학업 집중으로 돌아간다.
+    const ug=S.stage==='ug', pl=planMode();
+    if(pl){ // 학기 전략: 지원형 행동은 학기 초에 판정하고, 떨어지면 그 칸은 학업 집중으로 돌아간다.
       const P=fitPlan(), ok={}, acts=P.acts.filter(id=>{const A=SA[id]; if(!A.p)return true; ok[id]=roll(A.p()); if(!ok[id])log(A.n+' 탈락','남은 시간은 학업에 쏟았다.'); return ok[id];});
-      const cur=S.cur={cred:P.cred,acts,ok,f:slots()-P.cred-acts.reduce((a,id)=>a+SA[id].s,0)}, g={res:P.cred/18*3+cur.f*.3,lec:P.cred/18};
+      const rs=P.rs||0, cur=S.cur={cred:P.cred,rs,acts,ok,f:slots()-P.cred-rs-acts.reduce((a,id)=>a+SA[id].s,0)};
+      const g=ug?{res:P.cred/18*3+cur.f*.3,lec:P.cred/18}:{res:(P.cred/9+rs*.25+cur.f*.15)*adv.gain,lec:P.cred/18};
+      // 대학원: 개인 연구 칸이 논문 진행도를(빨리 쓰기), 남은 칸이 논문 퀄리티를(잘 쓰기) 올린다. 착취형 교수는 진행 1.2배.
+      if(!ug){S.prog+=(rs*1.6+S.res*.1)*(adv.prog||1); S.pq=Math.min(30,(S.pq||0)+cur.f*.6); S.hp-=rs;}
       for(const id of acts){const A=SA[id]; for(const k in A.g||{})g[k]=(g[k]||0)+A.g[k]; S.hp+=A.hp; S.joy=clamp(S.joy+(A.joy||0),0,100);
-        if(A.money)fx({money:Math.round(A.money*(A.money>0?payMul(A.why):1))},A.why);}
+        const mo=typeof A.money==='function'?A.money():A.money; if(mo)fx({money:Math.round(mo*(mo>0?payMul(A.why):1))},A.why);}
       S.hp-=P.cred; for(const k in g){if(g[k]>0){grow(k,g[k],joyMul);S.used.push(k);}else S[k]=clamp(S[k]+g[k],0,100);}
       if(acts.includes('gym'))S.hpMax=Math.min(120,S.hpMax+2);
       S.alloc=planAlloc(cur); }
@@ -1033,10 +1053,10 @@ function advance(){
     // 연애: 관계 비중이 연인 호감을 지키고, 새 인연을 만든다 (예전 '연애' 칸)
     const rel=S.alloc.rel;
     // 주변 사람: 관계 비중만큼 가까워지고 새 사람을 만난다. ponytail: 결산창에 보여 주는 값. 사건·판정에 쓰려면 여기 v를 읽는다.
-    const club=ug&&S.cur.acts.includes('club'), love=ug&&S.cur.acts.includes('love');
-    S.ppl=S.ppl||[]; for(const x of S.ppl)x.v=clamp(x.v+Math.round((ug?(club?4:-1):rel/4-4)+rnd()*6),0,100);
-    if(S.ppl.length<6&&rnd()*100<(ug?15+(club?30:0):20+rel*2)){const q=npc(rnd()<.5?'f':'m'); S.ppl.push({n:pick('김이박최정')+q.name,role:pick(grad()?['연구실 동료','학회 지인']:['학과 친구','동아리 선배','스터디 조원']),img:q.img,v:35+Math.round(rnd()*25)});}
-    if(ug){ // 썸 → 연애. 연애 행동을 넣어야 썸이 고백으로 이어지고, 애인과의 친밀도가 지켜진다.
+    const club=pl&&S.cur.acts.includes('club'), love=pl&&S.cur.acts.includes('love');
+    S.ppl=S.ppl||[]; for(const x of S.ppl)x.v=clamp(x.v+Math.round((pl?(club?4:-1):rel/4-4)+rnd()*6),0,100);
+    if(S.ppl.length<6&&rnd()*100<(pl?15+(club?30:0):20+rel*2)){const q=npc(rnd()<.5?'f':'m'); S.ppl.push({n:pick('김이박최정')+q.name,role:pick(grad()?['연구실 동료','학회 지인']:['학과 친구','동아리 선배','스터디 조원']),img:q.img,v:35+Math.round(rnd()*25)});}
+    if(pl){ // 썸 → 연애. 연애 행동을 넣어야 썸이 고백으로 이어지고, 애인과의 친밀도가 지켜진다.
       if(S.partner){ if(love){S.partner.fav=clamp(S.partner.fav+1,0,5);fx({joy:8,money:-100},'데이트');grow('cha',2,joyMul);}
         else{S.partner.fav--; if(S.partner.fav<=0){fx({partner:-1,joy:-12});msg('이별','연락이 뜸해지더니 끝났다. 바빴다는 말은 하지 않기로 했다.');}} }
       else if(S.crush){ const c=S.crush; S.crush=null;
@@ -1050,13 +1070,13 @@ function advance(){
   // 수입과 지출
   if(!inArmy){ if(S.stage==='ug')fx({money:[-600,-250,350][S.family]+RENT},S.family===2?'집안 지원':'생활비'); // 예전 생활비에서 월세를 떼어 냈다(합은 같다)
     else if(career()){fx({money:CAREER[S.stage].pay},CAREER[S.stage].n+' 급여');fx({money:-760+RENT},'생활비');}
-    else{fx({money:Math.round((S.stage==='ms'?600:960)*adv.pay+(S.lab.pres===3?120:0))},'인건비');fx({money:-760+RENT},'생활비');}
+    else{fx({money:adv.mp[S.stage==='ms'?0:1]*4+(S.lab.pres===3?120:0)},'인건비');fx({money:-760+RENT},'생활비');}
     if(!S.home)fx({money:-RENT},'월세');
     if(S.stage==='ug'&&S.uni)fx({money:-Math.round(S.uni.tuition*[.5,.3,0][S.family])},'등록금'); // 집안 형편이 넉넉할수록 부모님이 대신 낸다. ponytail: 학자금 대출·국가장학금은 아직 없음
     const L=LIFE[S.life||'mid']; if(L.cost)fx({money:-L.cost},L.cost>0?'플렉스':'가성비 절약'); S.joy=clamp(S.joy+L.joy,0,100); }
   if(S.money>0){let g=S.money*yieldPct(S.port||'dep')/100; if(g>0)g*=.6+S.eco/125; g=Math.round(g); if(g)fx({money:g},'투자');}
   // 회복, 감소, 행복
-  S.hp=clamp(S.hp+(sick?0:28+(S.home?5:0)+(!inArmy&&S.stage==='ug'&&S.cur&&S.cur.acts.includes('gym')?10:0)),-50,S.hpMax);
+  S.hp=clamp(S.hp+(sick?0:28+(S.home?5:0)+(!inArmy&&!sick&&planMode()&&S.cur&&S.cur.acts.includes('gym')?10:0)),-50,S.hpMax);
   for(const k of STATS)if(!S.used.includes(k)&&!inArmy)S[k]=clamp(S[k]-(.2+S[k]*.006)*(S.joy<30?1.5:1),0,100); // 안 쓰는 능력치는 아주 조금씩 녹슨다
   S.joy=clamp(S.joy+(50-S.joy)*.03+(adv?adv.joy:0)+(S.hp<25?-4:0)+(S.money<-1500?-3:0)+(S.partner?2:0)+(!inArmy&&!sick&&S.alloc.rel+S.alloc.rest===0?-5:0),0,100);
   S.prog=Math.min(S.prog,100);
@@ -1080,11 +1100,12 @@ function advance(){
   S.t++; if(!inArmy)S.ss++;
   for(const[n,f]of TITLES)if(f(S))title(n);
   // 학점. ponytail: 결산창에 보여 주기만 하는 값. 장학금·대학원 입시에 쓰려면 여기서 S.gpa에 쌓는다.
-  const gk=S.res*.7+S.lec*.3, gpa=S.stage==='ug'&&!inArmy&&!sick?Math.round(clamp(1.8+gk/40+(S.stage==='ug'&&S.cur?-.6+1.1*Math.min(1,S.cur.f/S.cur.cred):S.alloc.study>=40?.3:0)+(S.joy>60?.1:0)-(S.hp<25?.4:0)+rnd()*.4-.2,1.5,4.5)*10)/10:null;
-  if(gpa!=null&&gpa>=4)fx({money:SCHOLAR_GPA},'성적 장학금'); // 학점 4.0 이상이면 다음 학기 성적 장학금
-  if(gpa!=null){S.gsum=(S.gsum||0)+gpa;S.gn=(S.gn||0)+1;S.gpa0=gpa;S.cred=(S.cred||0)+S.cur.cred;} // 이수 학점은 누적만(졸업 요건은 아직 없다)
+  const gk=S.res*.7+S.lec*.3, gpa=planMode()&&S.cur&&!inArmy&&!sick?Math.round(clamp(1.8+gk/40+(S.cur?-.6+1.1*Math.min(1,S.cur.f/S.cur.cred):S.alloc.study>=40?.3:0)+(S.joy>60?.1:0)-(S.hp<25?.4:0)+rnd()*.4-.2,1.5,4.5)*10)/10:null;
+  if(gpa!=null&&S.stage!=='ug'){S.gg=S.gg||{sum:0,n:0};S.gg.sum+=gpa;S.gg.n++;}
+  else if(gpa!=null&&gpa>=4)fx({money:SCHOLAR_GPA},'성적 장학금'); // 학점 4.0 이상이면 다음 학기 성적 장학금
+  if(gpa!=null&&S.stage==='ug'){S.gsum=(S.gsum||0)+gpa;S.gn=(S.gn||0)+1;S.gpa0=gpa;S.cred=(S.cred||0)+S.cur.cred;} // 이수 학점은 누적만(졸업 요건은 아직 없다)
   // 학기 결산창: 이번 학기 사건을 다 치른 뒤, 다음 단계 카드(진학·입대 등) 앞에 뜬다. 바뀐 값은 볼 때 계산한다.
-  S.q.push({k:'settle',t:S.t-1,name:semName,b,prog0,n0:b.n,ti0,p0:S.partner&&S.partner.name,gpa,brk:[...new Set(S.brk)],spark:[...new Set(S.spark)],out:inArmy||sick?null:achieve(),foc:inArmy?'군 복무':S.stage==='ug'&&!sick?planSum():blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · ')});
+  S.q.push({k:'settle',t:S.t-1,name:semName,b,prog0,n0:b.n,ti0,p0:S.partner&&S.partner.name,gpa,brk:[...new Set(S.brk)],spark:[...new Set(S.spark)],out:inArmy||sick?null:achieve(),foc:inArmy?'군 복무':planMode()&&!sick?planSum():blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · ')});
   transitions(); save();
 }
 // 학업 토글 5종(하나만 고른다). 초점 보너스 +15: 학업(대학원은 연구) 초점이면 어학·논문·랩 인턴, 대외활동 초점이면 학회·공모전이 잘 된다.
@@ -1096,7 +1117,7 @@ const ACTS={
   contest:{n:'공모전 참가',ico:'수상',f:'out',d:'영업력·연구력·매력·강의력이 높을수록 수상 확률이 오른다'},
   paper:{n:'논문 쓰기',ico:'논문',f:'study',d:'연구력이 높을수록 논문 등급·피인용수·저널 등급이 오른다'},
   intern:{n:'랩 인턴 참가',ico:'연구',f:'study',d:'매력·연구력이 높을수록 붙는다. 지도 교수와 인연이 생긴다',p:()=>10+S.cha*.5+S.res*.7}};
-const fbon=id=>S.stage==='ug'?0:({study:'study',res:'study',out:'out'}[S.focus]===ACTS[id].f?15:0);
+const fbon=id=>planMode()?0:({study:'study',res:'study',out:'out'}[S.focus]===ACTS[id].f?15:0);
 const pAct=id=>clamp(Math.round(ACTS[id].p()+fbon(id)),5,95);
 const langLeft=()=>S.lang?S.lang.t+LANG_KEEP-S.t:0, langOk=()=>langLeft()>0;
 function actRow(id,ok){ if(!id||!ACTS[id])return null; const A=ACTS[id], b=fbon(id), R=S.rec=S.rec||{aw:{},conf:{}}, T=S.t-1, avg=(S.eco+S.res+S.cha+S.lec)/4;
@@ -1113,16 +1134,30 @@ function actRow(id,ok){ if(!id||!ACTS[id])return null; const A=ACTS[id], b=fbon(
   S.flags.known=1; R.intern=(R.intern||0)+1; return['인연','랩 인턴 결과','지도 교수와 인연이 생겼다','합격']; }
 // 결산창 성과 줄 [아이콘, 제목, 설명, 결과]. ponytail: 학점처럼 보여 주기만 하는 값. 장학금·입시에 쓰려면 S에 쌓는다.
 function achieve(){ const g=grad(), n=clamp(Math.round(4*Math.min(1,S.alloc.study/35))-(S.joy<30?1:0),0,4);
-  return [...(S.stage==='ug'&&S.cur?Object.keys(SA).filter(id=>SA[id].car&&(S.cur.acts.includes(id)||S.cur.ok[id]===false)).map(id=>actRow(id,S.cur.ok[id])):[actRow(S.act)]),
+  return [...(planMode()&&S.cur?Object.keys(SA).filter(id=>SA[id].car&&(S.cur.acts.includes(id)||S.cur.ok[id]===false)).map(id=>actRow(id,S.cur.ok[id])):[actRow(S.act)]),
     ['과제','과제 결과',g?'연구 과제 보고서 4건':'전공 과제 4개 제출',n===4?'모두 완료':n+'개 완료'],
     S.stage==='ug'?['학사모','진학 결과','대학원 진학',S.ss>=8?'원서 접수':'준비 중']:S.stage==='ms'?['학사모','진학 결과','박사 과정 진학',S.ss>=4?'진학 심사':'준비 중']
       :S.stage==='phd'?['학사모','졸업 요건',`실적 ${NEED}점, 4년 이상`,`실적 ${pts()}점`]
       :S.stage==='pd'?['학사모','교수 임용',`공채 지원 ${PD_MIN/2}년 차부터`,`실적 ${pts()}점`]
       :['학사모',S.stage==='ap'?'정년 보장 심사':'정교수 승진',`임용 뒤 실적 ${CAREER[S.stage].need}점 권장`,`실적 ${cpts()}점`]].filter(Boolean);}
-// 대학원 원서: 3곳에 한꺼번에 지원하고 그 자리에서 판정한다. 모두 떨어지면 가장 낮은 곳에 추가 합격.
-function offers(){ const list=[3,2,1].map(p=>{const o={pres:p,type:pick(Object.keys(ADV)),prof:pick('김이박최정')+pick(NAMES),face:Math.floor(rnd()*3),rep:Math.round(68+rnd()*27),sub:pick(SUBFIELD[S.field]||SUBFIELD.물리학)};
-    o.p=admit(o); o.ok=roll(o.p); return o;});
-  if(!list.some(o=>o.ok))Object.assign(list[2],{ok:true,extra:true}); return{k:'offers',list}; }
+// 대학원 서류 점수 = 연구력 + 학점 + 어학 + 학부 실적(학회·수상·논문·인턴, 20점 상한) + 출신 대학 평판.
+function gradDoc(){ const R=rec(), g=avgGpa();
+  const car=Math.min(20,(R.conf.구두||0)*4+(R.conf.포스터||0)*2+(R.aw.대상||0)*6+(R.aw.우수상||0)*4+(R.aw.장려상||0)*2+(R.papers||[]).length*6+(R.intern||0)*3);
+  const parts=[['학점',S.gn?Math.round((g-3)*10):0,S.gn?g.toFixed(1):'없음'],['어학',langOk()?Math.round((S.lang.score-600)/40):-5,langOk()?'TOEIC '+S.lang.score:S.lang?'만료':'없음'],
+    ['실적',car,car?'+'+car:'없음'],['출신',S.uni?Math.round((S.uni.rep-80)/4):0,ugName()]];
+  return{pts:S.res+parts.reduce((a,x)=>a+x[1],0),parts}; }
+// 학교 기준 = 평판 − 40. 기준과 같으면 50%, 1점마다 ±2.5%. 교수 인연(랩 인턴·면담)이 있으면 학부 대학에 +8.
+const gradP=(u,pts,home)=>clamp(Math.round(50+(pts-(u.rep-40)+(home?8:0))*2.5),3,95);
+// 대학원 원서: 실제 대학 20곳에 한꺼번에 지원하고, 합격한 곳 중 평판 최상·중간·최하 3곳만 보여 준다.
+// 인연이 있는 학부 대학에 붙었으면 중간 자리를 그곳으로 바꾼다. 3곳이 안 되면 떨어진 곳 중 평판이 낮은 순으로 추가 합격.
+function offers(){ const d=gradDoc(), home=S.flags.known&&S.uni?S.uni.n:null, byRep=(a,b)=>b.rep-a.rep;
+  const ok=UNIS.filter(u=>roll(gradP(u,d.pts,u.n===home))).sort(byRep), no=UNIS.filter(u=>!ok.includes(u)).sort(byRep).reverse();
+  let pk=[...new Set([ok[0],ok[Math.floor((ok.length-1)/2)],ok[ok.length-1]])].filter(Boolean);
+  const h=ok.find(u=>u.n===home); if(h&&!pk.includes(h))pk[pk.length>2?1:pk.length]=h;
+  const extra=[]; while(pk.length+extra.length<3)extra.push(no.shift());
+  const lab=(u,x)=>({n:u.n,urep:u.rep,pres:u.tier,ok:true,extra:x,home:u.n===home,type:pick(Object.keys(ADV)),prof:pick('김이박최정')+pick(NAMES),face:Math.floor(rnd()*3),rep:Math.round(68+rnd()*27),sub:pick(SUBFIELD[S.field]||SUBFIELD.물리학)});
+  return{k:'offers',doc:d.parts,list:[...pk.sort(byRep).map(u=>lab(u,false)),...extra.map(u=>lab(u,true))]}; }
+const gName=o=>o.n||GRAD[o.pres].n; // 예전 저장 데이터는 가상 학교 번호만 있다
 function transitions(){
   if(S.army>0)return;
   if(career()){ if(S.t>=RETIRE_T)S.q.push({k:'retire'});
@@ -1168,10 +1203,10 @@ function view(){
     return{title:mini?'이번 주의 선택':'사건',body:josa(e.t(S)),ch:e.c.map(o=>o.need&&S[o.need[0]]<o.need[1]?{l:o.l,tag:`${DN[o.need[0]]} ${o.need[1]} 필요`,lock:1}
       :o.risk?{l:o.l,tag:'위험',risk:1}:o.need?{l:o.l,tag:`${DN[o.need[0]]} ${o.need[1]}+`,good:1}:T(o.l,o.j?chance(o.j[0],o.j[1]):null))};}
   if(c.k==='submit'){const bonus=subBonus();
-    return{title:'원고 완성',body:'논문 한 편이 완성되었다. 어디에 투고할까? 높은 곳일수록 실적이 크다.',ch:JOURNAL.map(j=>T(`${j.n} (실적 ${j.pt}점)`,chance('res',j.req,bonus)))};}
+    return{title:'원고 완성',body:`논문 한 편이 완성되었다. 어디에 투고할까? 높은 곳일수록 실적이 크다.${S.pq>=1?`\n\n여유 있게 다듬은 덕에 퀄리티 +${Math.round(S.pq)}.`:''}`,ch:JOURNAL.map(j=>T(`${j.n} (실적 ${j.pt}점)`,chance('res',j.req,bonus)))};}
   if(c.k==='army')return{title:'입영 통지',body:'2학년이 끝났다. 병역을 어떻게 할까?',ch:[T('지금 입대한다 (세 학기)'),T('미루고 박사 과정에서 전문연구요원에 도전한다')]};
   if(c.k==='jmy')return{title:'전문연구요원 선발',body:'붙으면 연구를 이어 가며 복무한다. 떨어지면 바로 입대다.',ch:[T('지원한다',chance('res',55,S.lab.pres*3))]};
-  if(c.k==='offers')return{title:'대학원 진학 결과',body:'',ch:c.list.filter(o=>o.ok).map(o=>T(`${GRAD[o.pres].n} ${o.prof} 교수 연구실`)).concat([T('대학원에 가지 않는다 (은퇴)')])};
+  if(c.k==='offers')return{title:'대학원 진학 결과',body:'',ch:c.list.filter(o=>o.ok).map(o=>T(`${gName(o)} ${o.prof} 교수 연구실`)).concat([T('대학원에 가지 않는다 (은퇴)')])};
   if(c.k==='phdDone')return{title:'박사 학위 취득',body:`학위 논문이 통과되었다. 게재 실적 ${pts()}점.\n\n교수가 되려면 박사후연구원으로 실적을 더 쌓고, 임용과 두 번의 승진 심사를 통과해야 한다.`,ch:[T('박사후연구원으로 연구를 이어 간다'),T('박사로 마무리한다 (엔딩)')]};
   if(c.k==='faculty')return{title:'교수 공채',body:`박사후연구원 ${S.ss}학기 차 · 게재 실적 ${pts()}점 · 계약 ${PD_MAX-S.ss}학기 남음.\n떨어져도 다음 학기 공채에 다시 지원할 수 있다.`,
     ch:[3,2,1].map(p=>T(`${GRAD[p].n} 조교수 · 학기 급여 ${won(CAREER.ap.pay)}`,facultyP(p))).concat([T('이번 공채는 넘기고 실적을 쌓는다'),T('기업 연구소로 옮긴다 (은퇴)')])};
@@ -1180,15 +1215,15 @@ function view(){
     return{title:ap?'정년 보장 심사 · 부교수 승진':'정교수 승진 심사',body:`${C.n} 임용 뒤 실적 ${cpts()}점 (권장 ${C.need}점) · 강의력 ${Math.round(S.lec)}\n${ap?(last?'이번 심사에서 떨어지면 재임용이 끝난다.':'두 번 떨어지면 재임용이 끝난다.'):'떨어져도 자리는 그대로이고 다음 학기에 다시 신청할 수 있다.'}`,
       ch:[T('심사를 신청한다',promoP())].concat(ap&&S.ss>=AP_MAX?[]:[T('한 학기 더 준비한다')])};}
   if(c.k==='retire')return{title:'정년 퇴임',body:'마지막 강의를 마쳤다. 연구실 열쇠를 반납할 차례다.',ch:[T('기록을 정리한다')]};
-  if(c.k==='msEnd')return{title:'석사 졸업',body:'석사 학위를 받았다. 지도교수가 말한다. "박사도 여기서 하지?"',ch:[T('박사 과정에 진학한다'),T('여기서 그만둔다 (은퇴)')]};
+  if(c.k==='msEnd'){const a=ggAvg(), low=S.gg&&S.gg.n&&a<3;
+    return{title:'석사 졸업',body:low?`석사 학위를 받았다. 대학원 평점 ${a.toFixed(1)}. 박사 진학 심사에서 떨어졌다.`:'석사 학위를 받았다. 지도교수가 말한다. "박사도 여기서 하지?"',
+      ch:[low?{l:'박사 과정에 진학한다',tag:'평점 3.0 필요',lock:1}:T('박사 과정에 진학한다'),T('여기서 그만둔다 (은퇴)')]};}
   if(c.k==='defense')return{title:'졸업 심사',body:`졸업 요건을 채웠다 (실적 ${pts()}점). 학위 논문 심사를 신청할까?`,ch:[T('신청한다',chance('res',55,S.lab.fav*3)),T('한 학기 더 준비한다')]};
   if(c.k==='kicked')return{title:'재학 연한 만료',body:'박사 과정 8년이 지났다. 학칙상 더 다닐 수 없다.',ch:[T('짐을 싼다')]};
   if(c.k==='burnout')return{title:'다 때려치우고 싶다',body:'아침에 눈을 떴는데 연구실에 갈 이유가 떠오르지 않는다.',ch:[T('그래도 간다'),T('떠난다 (은퇴)')]};
 }
-const subBonus=()=>S.lab.pres*4-4+ADV[S.lab.type].sub;
-const gpaBon=()=>S.gn?Math.round((S.gsum/S.gn-3)*10):0;
-const admit=o=>chance('res',GRAD[o.pres].req,S.ugTier*5-5+(S.flags.known?8:0)+gpaBon());
-function enter(o){S.lab={school:GRAD[o.pres].n,pres:o.pres,type:o.type,prof:o.prof,face:o.face,rep:o.rep,sub:o.sub,fav:2};S.stage='ms';S.ss=0;S.prog=0;focus(FOCUS[S.focus]?S.focus:'res');log(`${S.lab.school} 대학원 입학 (${o.prof?o.prof+' · ':''}${o.type} 교수)`);}
+const subBonus=()=>S.lab.pres*4-4+ADV[S.lab.type].sub+Math.round(S.pq||0);
+function enter(o){S.pq=0;S.lab={school:gName(o),pres:o.pres,type:o.type,prof:o.prof,face:o.face,rep:o.rep,sub:o.sub,fav:2};S.stage='ms';S.ss=0;S.prog=0;focus(FOCUS[S.focus]?S.focus:'res');log(`${S.lab.school} 대학원 입학 (${o.prof?o.prof+' · ':''}${o.type} 교수)`);}
 // 박사 이후. 연구력은 대부분 높게 모이므로 임용·승진은 게재 실적이 좌우한다. cpts: 지금 직위에 오른 뒤 쌓은 실적.
 const prob=p=>clamp(Math.round(p),5,95);
 const cpts=()=>pts()-(S.cpt||0);
@@ -1225,7 +1260,7 @@ function resolve_(i){
     S.q.unshift({k:'msg',title:res,body:txt+(dtxt(d)?'\n\n'+dtxt(d):''),ev:1});}
   else if(c.k==='submit'){const j=JOURNAL[i],ok=roll(chance('res',j.req,subBonus()));
     if(ok){const big=rnd()<.12+Math.max(0,S.res-j.req)*.004, pt=big?Math.round(j.pt*1.5):j.pt;
-      S.papers.push({n:j.n,pt,big,a:age()});S.prog=0;fx({joy:big?15:8,adv:1});log(`${j.n} 게재${big?' (화제의 논문)':''}`);
+      S.papers.push({n:j.n,pt,big,a:age()});S.prog=0;S.pq=0;fx({joy:big?15:8,adv:1});log(`${j.n} 게재${big?' (화제의 논문)':''}`);
       S.q.unshift({k:'msg',title:big?'대성공':'성공',stamp:'게재 승인',body:big?`${j.n}에 실렸고, 학계가 술렁인다. 실적 ${pt}점.`:`${j.n}에 실렸다. 실적 ${pt}점.`});
     }else{S.prog=70;fx({joy:-6});S.q.unshift({k:'msg',title:'실패',stamp:'게재 불가',body:pick(REJECT)+'\n원고를 고쳐서 다시 내야 한다.'});}}
   else if(c.k==='army'){ if(i===0)enlist(); else{S.defer=true;log('입대 연기');} }
@@ -1233,8 +1268,8 @@ function resolve_(i){
     else{enlist();msg('실패','떨어졌다. 다음 주에 훈련소로 간다. 실험은 후배가 이어받는다.');} }
   else if(c.k==='offers'){ const ok=c.list.filter(o=>o.ok); if(i>=ok.length)return finish('exit');
     const o=ok[i]; enter(o);
-    if(o.extra)msg('추가 합격',`정시에서는 모두 떨어졌다. 추가 모집으로 ${GRAD[o.pres].n} ${o.prof} 교수 연구실에 들어갔다.`);
-    else msg('합격',`${GRAD[o.pres].n} ${o.prof} 교수 연구실의 합격 통지를 받았다.`,'합격'); }
+    if(o.extra)msg('추가 합격',`정시에서는 모두 떨어졌다. 추가 모집으로 ${gName(o)} ${o.prof} 교수 연구실에 들어갔다.`);
+    else msg('합격',`${gName(o)} ${o.prof} 교수 연구실의 합격 통지를 받았다.${o.home?' 인턴 때 연구실의 그 교수다.':''}`,'합격'); }
   else if(c.k==='phdDone'){ if(i===1)return finish('grad'); hire('pd'); log('박사후연구원 시작');
     msg('박사후연구원 첫날',`${S.lab.school}에서 연구를 이어 간다. 이제 급여가 나오지만 계약은 ${PD_MAX/2}년이다. 1년 뒤부터 교수 공채에 지원할 수 있다.`); }
   else if(c.k==='faculty'){ if(i===4)return finish('exit');
@@ -1246,7 +1281,7 @@ function resolve_(i){
     else{ S.promoFail=(S.promoFail||0)+1; fx({joy:-8}); if(S.stage==='ap'&&(S.promoFail>=2||S.ss>=AP_MAX))return finish('noTenure');
       msg('심사 탈락','"실적을 조금 더 보완해 주십시오." 심사 의견서를 서랍에 넣었다.'); } }
   else if(c.k==='retire')return finish('retire');
-  else if(c.k==='msEnd'){ if(i===1)return finish('exit'); S.stage='phd';S.ss=0;fixAlloc();log('박사 과정 진학'); }
+  else if(c.k==='msEnd'){ if(i===1||(S.gg&&S.gg.n&&ggAvg()<3))return finish('exit'); S.stage='phd';S.ss=0;fixAlloc();log('박사 과정 진학'); }
   else if(c.k==='defense'){ if(i===0){ if(roll(chance('res',55,S.lab.fav*3))){log('박사 학위 취득');S.q.unshift({k:'phdDone'});save();return;}
       fx({joy:-10});msg('실패','"한 학기만 더 보완해 오세요." 심사위원 다섯 명이 동시에 고개를 끄덕였다.');} }
   else if(c.k==='settle'){S.inc0=S.led.inc;S.exp0=S.led.exp;S.led={inc:0,exp:0};} // inc0: 계획 화면의 월 소득
@@ -1359,16 +1394,16 @@ if(typeof document!=='undefined'){
       <button class="btn ghost big" data-a="go" data-v="create">새 인생</button>
       <div class="row"><button class="btn ghost" data-a="go" data-v="people">인물</button><button class="btn ghost" data-a="go" data-v="dogam">도감</button></div>`;
   }
-  // 대학원 진학 결과: 에셋/진학-결과-시안-대학원. 합격한 연구실 중 하나를 고른다(ui.gpick은 합격 목록의 순번). 모두 떨어지면 가장 낮은 곳이 추가 합격.
+  // 대학원 진학 결과: 에셋/진학-결과-시안-대학원. 합격한 연구실 3곳만 보여 주고 하나를 고른다(ui.gpick은 합격 목록의 순번).
   function gradResult(){const c=S.q[0], ok=c.list.filter(o=>o.ok); if(!(ui.gpick<ok.length))ui.gpick=0;
     const bar=(name,v)=>`<span><i>${name}</i><b class="num">${v}</b><small>/100</small><span class="meter"><i style="width:${v}%"></i></span></span>`;
-    return `<div class="scroll uresult"><header class="ur-band"><h1>진학 결과</h1></header><p class="ur-sub"><span>함께할 연구실을 만나보세요</span></p><p class="ur-count"><span>합격한 대학원 ${ok.length}곳</span></p>
-      <div class="ur-list" role="radiogroup" aria-label="진학할 연구실">${c.list.map(o=>{const G=GRAD[o.pres], n=ok.indexOf(o), on=n===ui.gpick;
-        const inner=`<span class="gc-top"><img class="gc-bld" src="에셋/대학원-건물-${o.pres}.webp" alt=""><b class="gc-school">${G.n}</b><small>${esc(S.field)}과 석사과정</small><span class="uc-stamp${o.ok?'':' no'}">${o.extra?'추가 합격':o.ok?'합격':'불합격'}</span></span>
-          <span class="gc-mid"><img class="gc-face" src="에셋/교수-${o.face}.webp" alt=""><span class="gc-info"><span class="gc-prof"><i>지도교수</i><b>${esc(o.prof)}</b></span><span class="gc-sub"><i>전문 분야</i><b>${esc(o.sub)}</b></span>
+    return `<div class="scroll uresult"><header class="ur-band"><h1>진학 결과</h1></header><p class="ur-sub"><span>함께할 연구실을 만나보세요</span></p><p class="ur-count"><span>합격한 대학원 ${ok.length}곳</span></p>${c.doc?`<p class="uc-cut">서류 · ${c.doc.map(x=>`${x[0]} ${esc(x[2])}`).join(' · ')}</p>`:''}
+      <div class="ur-list" role="radiogroup" aria-label="진학할 연구실">${ok.map((o,n)=>{const on=n===ui.gpick;
+        const inner=`<span class="gc-top"><img class="gc-bld" src="에셋/대학원-건물-${o.pres}.webp" alt=""><b class="gc-school">${esc(gName(o))}</b><small>${esc(S.field)}과 석사과정</small><span class="uc-stamp">${o.extra?'추가 합격':'합격'}</span></span>
+          <span class="gc-mid"><img class="gc-face" src="에셋/교수-${o.face}.webp" alt=""><span class="gc-info"><span class="gc-prof"><i>지도교수</i><b>${esc(o.prof)}</b>${o.home?'<em>인턴 인연</em>':''}</span><span class="gc-sub"><i>전문 분야</i><b>${esc(o.sub)}</b></span><span class="gc-cond">${(C=>`월급 <b>${C.mp[0]}만</b> · 산학 <b>${Math.round(C.ir*100)}%</b> ${C.iq?'의무':'선택'} · 조교 <b>×${C.tm}</b> ${C.tq?'의무':'선택'}`)(ADV[o.type])}</span>
           <span class="gc-chips">${ADV_TRAIT[o.type].map(([ico,t])=>`<span><img src="에셋/특성-${ico}.webp" alt="">${t}</span>`).join('')}</span></span></span>
-          <span class="gc-foot">${bar('대학 평판',G.rep)}${bar('연구실 평판',o.rep)}</span>`;
-        return o.ok?`<button class="ucard gcard${on?' on':''}" data-a="gpick" data-v="${n}" role="radio" aria-checked="${on}">${inner}</button>`:`<div class="ucard gcard off">${inner}</div>`;}).join('')}</div>
+          <span class="gc-foot">${bar('대학 평판',o.urep||GRAD[o.pres].rep)}${bar('연구실 평판',o.rep)}</span>`;
+        return `<button class="ucard gcard${on?' on':''}" data-a="gpick" data-v="${n}" role="radio" aria-checked="${on}">${inner}</button>`;}).join('')}</div>
       <p class="hint">${ok.length>1?'합격한 연구실 중 진학할 곳을 고르세요':'합격한 연구실로 진학합니다'} · 지도교수 유형: ${esc(ok[ui.gpick].type)} (${esc(ADV[ok[ui.gpick].type].d)})</p>
       <button class="btn ghost" data-a="res" data-v="${ok.length}">대학원에 가지 않는다 (은퇴)</button></div>
       <button class="btn big" data-a="res" data-v="${ui.gpick}">확인</button>`;}
@@ -1484,7 +1519,7 @@ if(typeof document!=='undefined'){
   // 초점·선택은 학기가 시작될 때 반영되므로, 진행 중에 바꾼 것은 다음 학기부터 적용된다.
   function progress(){
     const live=S.q.find(x=>x.k==='settle'), c=live||{t:S.t,name:`${stg()} ${S.t%2+1}학기`,b:S}, b=c.b, done=!live?0:S.pend?8-S.pend.length:8, logs=live?S.log.filter(l=>l.t===c.t).reverse():[], n=S.log.length, P=picks();
-    const acts=!live?'개강 준비':c.foc||(c.name.startsWith('군')?'군 복무':S.stage==='ug'?planSum():blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · '));
+    const acts=!live?'개강 준비':c.foc||(c.name.startsWith('군')?'군 복무':planMode()?planSum():blocks().sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>AN[x[0]]).join(' · '));
     const kv=(k,v,w)=>`<div class="kv${w?' wide':''}"><span class="chip">${k}</span><b class="num">${v}</b></div>`;
     // 방금 2주가 지나 능력치가 달라졌으면(ui.flash===n) 오른 만큼은 밝은 구간, 내린 만큼은 빗금 구간으로 보여 주고 +값을 띄운다.
     const dl=live&&ui.flash===n&&logs[0]&&logs[0].d||{};
@@ -1492,7 +1527,7 @@ if(typeof document!=='undefined'){
       return `<div${ch?` class="pop ${up?'gu':'gd'}"`:''}><p><span>${SL(k)}${ch?` <em class="${up?'up':'down'}">${up?'+':''}${Math.round(d*10)/10}</em>`:''}</span><b class="num">${v}</b></p><div class="meter" style="--bar:${COL[k]}"><i style="width:${up?v-w:v}%"></i>${ch?`<i class="g${up?'u':'d'}" style="width:${w}%"></i>`:''}</div></div>`;};
     const tab=ui.ptab||'투자';
     const sheet=ui.sheet!=='pick'?'':`<div class="sheet-bg" data-a="close"></div><section class="sheet" role="dialog" aria-label="학기 선택">
-        <header><div class="rtabs" role="tablist">${['투자','관계',...(S.stage==='ug'?[]:['학업'])].map(k=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" data-a="ptab" data-v="${k}">${k}</button>`).join('')}</div><button data-a="close">닫기</button></header>
+        <header><div class="rtabs" role="tablist">${['투자','관계',...(planMode()?[]:['학업'])].map(k=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" data-a="ptab" data-v="${k}">${k}</button>`).join('')}</div><button data-a="close">닫기</button></header>
         <div class="sheet-body"><p class="sheet-note">${live?'지금 고른 것은 다음 학기부터 적용된다. ':''}고르는 동안 시간은 멈춰 있다.</p>${{투자:P.invUI,관계:P.relUI,학업:P.actUI}[tab]}</div></section>`;
     const SPD=[1,2,4,8], run=!!S.pend;
     return `${top(c)}
@@ -1504,7 +1539,7 @@ if(typeof document!=='undefined'){
         <p class="idl"><b>${age()}세</b><i>·</i><b>${role()}</b><i>·</i><b>${esc(S.lab?S.lab.school:ugName())}</b></p>
         <p class="mny"><span><small>총 자산</small><b class="num">${won(asset(S))}</b></span><span><small>월 소득</small><b class="num up">${won(((live?S.led.inc:S.inc0)||0)/4)}</b></span><span><small>월 비용</small><b class="num down">${won(((live?S.led.exp:S.exp0)||0)/4)}</b></span></p></section>
       <section class="card sg"><div class="sgs">${['lec','res','cha','eco','joy'].map(cell).join('')}</div></section>
-      <section class="card book"><header><h2>학기 기록</h2><div class="ctl">${S.stage==='ug'&&!(S.army>0)?`<button title="이번 학기 계획"><small>계획</small><b>${esc(planSum())}</b></button>`:`<button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}" title="${live?'다음 학기 초점':'초점'}"><small>초점</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▴':'▾'}</i></button>`}<button data-a="sheet"><b>선택</b></button></div></header>
+      <section class="card book"><header><h2>학기 기록</h2><div class="ctl">${planMode()&&!(S.army>0)?`<button title="이번 학기 계획"><small>계획</small><b>${esc(planSum())}</b></button>`:`<button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}" title="${live?'다음 학기 초점':'초점'}"><small>초점</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▴':'▾'}</i></button>`}<button data-a="sheet"><b>선택</b></button></div></header>
         ${ui.fopen?`<div class="focbox">${live&&!S.army?'<p class="hint">지금 바꾸면 다음 학기부터 적용됩니다</p>':''}${P.focUI}</div>`:''}
         <div class="recl">${logs.slice(0,ui.logN||6).map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><p>${esc(l.s)}${l.sub?` <small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?` <em class="dd">${dhtml(l.d,' ')}</em>`:''}</p></div>`).join('')||`<p class="muted recn">${live?'새 학기가 시작됐다.':'개강을 누르면 학기가 시작된다.'}</p>`}</div>
         ${logs.length>(ui.logN||6)?`<button class="lnk more" data-a="more">이전 기록 ${logs.length-(ui.logN||6)}개 더 보기</button>`:''}</section>
@@ -1512,19 +1547,20 @@ if(typeof document!=='undefined'){
         <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
           <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section>`}</div>${sheet}`;
   }
-  // 학기 전략 창(학부생): 결산·갈림길 카드를 다 치르면 개강 전에 뜬다. 고른 계획은 다음 학기에도 그대로 남는다.
+  // 학기 전략 창(학부생·대학원생): 결산·갈림길 카드를 다 치르면 개강 전에 뜬다. 고른 계획은 다음 학기에도 그대로 남는다.
   const LOCK='<svg viewBox="0 0 8 9" width="14" height="16" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M2 0h4v1h1v3h1v5H0V4h1V1h1zm0 1v3h4V1z"/></svg>';
   function strat(){
-    const P=fitPlan(), N=slots(), u=used(), f=N-u, cap=credCap();
-    const row=id=>{const A=SA[id], why=A.lock?.(), on=P.acts.includes(id), full=!on&&!why&&A.s>f;
-      return `<button class="sa${on?' on':''}" role="checkbox" aria-checked="${on}" data-a="sa" data-v="${id}"${why||full?' disabled':''}><img class="ico" src="에셋/아이콘-${A.ico}.webp" alt="">
-        <span><b>${A.n}<em class="num">${A.s}칸</em></b><small>${why||(full?'남은 칸이 모자라다':saD(id)+(A.p?` · 합격 확률 ${label(A.p())}`:''))}</small></span><i class="ck">${why?LOCK:on?'✓':''}</i></button>`;};
-    const ids=Object.keys(SA).sort((a,b)=>!!SA[a].lock?.()-!!SA[b].lock?.());
+    const P=fitPlan(), N=slots(), u=used(), f=N-u, cap=credCap(), ug=S.stage==='ug', main=P.cred+(P.rs||0);
+    const row=id=>{const A=SA[id], req=must(id), why=req?'':A.lock?.(), on=P.acts.includes(id), full=!on&&!why&&A.s>f;
+      return `<button class="sa${on?' on':''}" role="checkbox" aria-checked="${on}" data-a="sa" data-v="${id}"${why||full||req?' disabled':''}><img class="ico" src="에셋/아이콘-${A.ico}.webp" alt="">
+        <span><b>${A.n}<em class="num">${A.s}칸</em></b><small>${why||(full?'남은 칸이 모자라다':(req?'연구실 의무 · ':'')+saD(id)+(A.p?` · 합격 확률 ${label(A.p())}`:''))}</small></span><i class="ck">${why||req?LOCK:on?'✓':''}</i></button>`;};
+    const ids=Object.keys(SA).filter(saOk).sort((a,b)=>must(b)-must(a)||!!SA[a].lock?.()-!!SA[b].lock?.());
     return `<header class="top st-top"><button class="homebtn" data-a="go" data-v="home" aria-label="홈으로">${HOUSE}</button><h1>${stg()} ${S.t%2+1}학기 전략</h1></header>
       <section class="card strat">
-        <div class="slb" role="img" aria-label="슬롯 ${N}칸 중 수강 ${P.cred}칸, 행동 ${u-P.cred}칸, 남은 ${f}칸">${[...Array(N)].map((_,i)=>`<i${i<P.cred?' class="c"':i<u?' class="a"':''}></i>`).join('')}</div>
-        <p class="sl"><b class="num">체력 ${Math.round(S.hp)} · 슬롯 ${N} · 집중도 ${Math.round(f/P.cred*100)}%</b><small>남은 ${f}칸은 학점 집중에 사용</small></p>
-        <div class="cr"><span>수강 학점</span><button data-a="cred" data-v="-1" aria-label="학점 줄이기"${P.cred<=12?' disabled':''}>−</button><b class="num">${P.cred}</b><button data-a="cred" data-v="1" aria-label="학점 늘리기"${P.cred>=cap||f<1?' disabled':''}>+</button><small>상한 ${cap}</small></div>
+        <div class="slb" role="img" aria-label="슬롯 ${N}칸 중 ${ug?'수강':'학점·개인 연구'} ${main}칸, 행동 ${u-main}칸, 남은 ${f}칸">${[...Array(N)].map((_,i)=>`<i${i<main?' class="c"':i<u?' class="a"':''}></i>`).join('')}</div>
+        <p class="sl"><b class="num">체력 ${Math.round(S.hp)} · 슬롯 ${N} · 집중도 ${Math.round(f/P.cred*100)}%</b><small>남은 ${f}칸은 ${ug?'학점 집중에':'평점과 논문 퀄리티에'} 사용</small></p>
+        ${ug?`<div class="cr"><span>수강 학점</span><button data-a="cred" data-v="-1" aria-label="학점 줄이기"${P.cred<=12?' disabled':''}>−</button><b class="num">${P.cred}</b><button data-a="cred" data-v="1" aria-label="학점 늘리기"${P.cred>=cap||f<1?' disabled':''}>+</button><small>상한 ${cap}</small></div>`
+          :`<div class="cr"><span>개인 연구</span><button data-a="cred" data-v="-1" aria-label="개인 연구 줄이기"${P.rs<=3?' disabled':''}>−</button><b class="num">${P.rs}</b><button data-a="cred" data-v="1" aria-label="개인 연구 늘리기"${P.rs>=18||f<1?' disabled':''}>+</button><small>학점 ${P.cred} 고정 · 논문 ${Math.round(S.prog)}%</small></div>`}
         <header class="sah"><span class="chip">행동</span>${S.t?'<small>지난 학기 계획 유지</small>':''}</header>
         <div class="sal">${ids.map(row).join('')}</div></section>
       <button class="btn big" data-a="start">이번 학기 시작</button>`;
@@ -1663,7 +1699,7 @@ if(typeof document!=='undefined'){
     else if(a==='res'){ui.fold.s_fin=ui.fold.s_rel=false;const current=view(), i=Number(v);if(!Number.isInteger(i)||!current||!current.ch[i]||current.ch[i].lock)return;resolve(i);ui.gpick=0;
       if(S&&!S.end&&!S.q.length&&!S.pend&&!stratOn()){ui.paused=false;ui.logN=6;advance();}} // 카드를 다 치르면(결산·갈림길 모두) 개강 전 화면 없이 바로 다음 학기
     else if(a==='focus'){focus(v);save();}
-    else if(a==='cred'){const P=plan();P.cred+=+v;fitPlan();save();}
+    else if(a==='cred'){const P=plan();if(S.stage==='ug')P.cred+=+v;else P.rs=(P.rs??9)+ +v;fitPlan();save();}
     else if(a==='sa'){const P=plan();P.acts=P.acts.includes(v)?P.acts.filter(x=>x!==v):[...P.acts,v];fitPlan();save();}
     else if(a==='start'){ui.paused=false;ui.logN=6;advance();}
     else if(a==='act'){S.act=S.act===v?null:v;save();}
@@ -1680,5 +1716,5 @@ if(typeof document!=='undefined'){
   decisionDialog.addEventListener('click',onAction);
   decisionDialog.addEventListener('cancel',e=>{e.preventDefault();if(ui.sheet==='retire'){ui.sheet=null;render();}});
   S=store.get('nobel.life'); if(S&&!S.end){fixAlloc(); if(S.q[0]&&S.q[0].k==='offers'&&!S.q[0].list.some(o=>'ok' in o))S.q[0]=offers();} render(); // 예전 저장의 원서 카드는 새 방식으로 다시 판정
-}else{ globalThis.G={newLife,advance,resolve,view,reveal,focus,offers,career,CAREER,RETIRE_T,relAct,RACT,BUY,LIFE,PORT,SA,fitPlan,slots,used,ACTS,Narrative,get S(){return S;},STATS,pts,josa,split1}; }
+}else{ globalThis.G={newLife,advance,resolve,view,reveal,focus,offers,career,CAREER,RETIRE_T,relAct,RACT,BUY,LIFE,PORT,SA,fitPlan,slots,used,must,ACTS,Narrative,get S(){return S;},STATS,pts,josa,split1}; }
 </script>
