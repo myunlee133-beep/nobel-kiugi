@@ -491,6 +491,21 @@ p{margin:0}
 .uc-foot{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:6px}
 .uc-foot>span{display:flex;justify-content:space-between;align-items:center;background:#fbe3c0;border-radius:4px;padding:3px 10px;font-size:13px;font-weight:700;color:var(--muted)}
 .uc-foot b{font-size:22px;color:var(--accent)}
+/* 진학 결과는 스크롤 없이 3곳이 한 화면에 들어간다 */
+.uresult{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;overflow:hidden;padding-top:4px}
+.uresult .ur-band{padding:5px 0}.uresult .ur-band h1{font-size:24px}
+.uresult .ur-list{flex:1;min-height:0;gap:8px}
+.uresult .ucard{flex:1;min-height:0;justify-content:space-between;gap:6px;padding:8px 12px;outline-offset:-6px}
+.uresult .uc-top{grid-template-columns:44px 1fr auto;padding-bottom:6px}
+.pc-top{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px}.pc-top.solo{grid-template-columns:1fr}.pc-top img{width:64px;height:64px;object-fit:contain;image-rendering:pixelated}
+.pc-d{font-weight:400!important;color:var(--ink)!important;font-size:13px}
+.pcard .uc-name b{font-size:21px}
+.uc-emb{width:44px;height:44px;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-size:22px;font-weight:700;border-radius:50%;box-shadow:0 0 0 2px var(--gold)}
+.uresult .uc-name b{font-size:19px}
+.uc-cut{text-align:center;font-size:13px;color:var(--muted)}
+.uc-info{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.uc-info>span{display:flex;flex-direction:column;align-items:center;background:#fbe3c0;border-radius:4px;padding:3px 2px}
+.uc-info i{font-style:normal;font-size:11px;color:var(--muted)}.uc-info b{font-size:15px;color:var(--accent)}
 @media(max-width:360px){.uc-top{grid-template-columns:54px 1fr auto}.uc-top img{width:54px}.uc-name b{font-size:18px}.uc-foot b{font-size:18px}}
 /* 대학원 진학 결과: 에셋/진학-결과-시안-대학원. .ucard 틀을 같이 쓴다. */
 .gc-top{display:grid;grid-template-columns:52px auto minmax(0,1fr) auto;align-items:center;gap:6px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
@@ -528,6 +543,9 @@ p{margin:0}
 const STATS=['res','lec','eco','cha'], SN={res:'연구',lec:'강의',eco:'영업',cha:'매력'};
 const FIELDS=['물리학','화학','의과학','경제학'];
 const FAMILY=['어려움','보통','넉넉함'];
+// 집안 소득 분위(1~10)는 집안 형편 구간 안에서 뽑는다. allow: 월 용돈(만 원, 학기 생활비 지원의 차이를 한 달로 나눈 값), assets는 시작 통장(newLife의 money와 같다).
+const FAM_INFO=[{q:[1,3],allow:0,assets:0,d:'용돈은 없다. 생활비는 스스로 벌어야 한다'},{q:[4,7],allow:60,assets:100,d:'생활비를 조금 보태 준다'},{q:[8,10],allow:160,assets:1000,d:'생활비 걱정은 하지 않아도 된다'}];
+function rollFamily(r=Math.random){const f=r()<.25?0:r()<.73?1:2, [a,b]=FAM_INFO[f].q; return {family:f,decile:a+Math.floor(r()*(b-a+1))};}
 const TALENT={연구형:'res',말발형:'lec',수완형:'eco',인기형:'cha',고른형:null};
 const TALENT_D={연구형:'모르는 문제를 끝까지 붙잡는 사람',말발형:'어려운 이야기도 술술 풀어내는 사람',수완형:'기회를 남보다 먼저 알아채는 사람',인기형:'처음 보는 사람과도 금세 친해지는 사람',고른형:'무엇이든 고루 해내는 사람'};
 // 시작 능력치: 무작위 비중으로 합 200을 나눈다. 재능은 가장 높은 능력치로 정하고, 고르게 퍼져 있으면 고른형.
@@ -541,11 +559,20 @@ const rollExam=(res,r=Math.random)=>EXAMS.map(()=>clamp(Math.round(9-res/12+r()*
 const examFx=g=>({res:10-g,lec:Math.ceil((10-g)/2),cha:1+Math.max(0,g-5),eco:1+Math.max(0,g-5)});
 function talentOf(st){const v=STATS.map(k=>st[k]); if(Math.max(...v)-Math.min(...v)<=12)return'고른형';
   const top=STATS.reduce((a,k)=>st[k]>st[a]?k:a); return Object.keys(TALENT).find(t=>TALENT[t]===top);}
-const UG=[null,{n:'경남한빛대',region:'경상',rep:74},{n:'중앙과기대',region:'경기',rep:85},{n:'한국대',region:'서울',rep:92}];
-// 새 인생에서 고르는 것. 고등학교는 시작 능력치를 조금 옮긴다. 수능이 끝나면 정시 3곳을 한꺼번에 판정하고(CUT 등급이면 60%, 한 등급마다 ±35%) 합격한 곳 중 하나를 고른다. 경남한빛대는 늘 합격이고 입학 장학금이 있다.
+const UG=[null,{n:'경남한빛대',region:'경상',rep:74},{n:'중앙과기대',region:'경기',rep:85},{n:'한국대',region:'서울',rep:92}]; // 예전 저장 데이터용 이름
+// 실제 대학. cut: 합격 기준 수능 등급, tuition: 학기당 등록금(만 원, 이공계 기준 대략치), rep: 평판. tier는 평판으로 정한다(대학원 입시·시나리오가 읽는다).
+const UNIS=[['서울대학교','서울',98,270,1],['KAIST','대전',96,350,1],['연세대학교','서울',94,420,2],['고려대학교','서울',93,410,2],['POSTECH','경북',92,400,2],['성균관대학교','경기',89,390,3],['한양대학교','서울',88,400,3],
+  ['중앙대학교','서울',82,410,4],['경희대학교','경기',82,400,4],['부산대학교','부산',80,220,4],['경북대학교','대구',78,215,5],['인하대학교','인천',77,400,5],['아주대학교','경기',76,395,5],
+  ['충남대학교','대전',72,210,6],['전북대학교','전북',70,200,6],['강원대학교','강원',66,200,7],['동아대학교','부산',64,350,7],['제주대학교','제주',64,200,9],['조선대학교','광주',62,350,9],['대구대학교','경북',60,330,9]]
+  .map(([n,region,rep,tuition,cut])=>({n,region,rep,tuition,cut,tier:rep>=88?3:rep>=76?2:1}));
+// 새 인생에서 고르는 것. 고등학교는 시작 능력치를 조금 옮긴다. 수능이 끝나면 합격한 실제 대학 3곳 중 하나를 고른다(rollAdmits).
 const HS=[{n:'일반고',d:'변화 없음',fx:{}},{n:'과학고',d:'연구+ 매력-',fx:{res:5,cha:-3}},{n:'외국어고',d:'강의+ 연구-',fx:{lec:5,res:-3}},{n:'특성화고',d:'경제+ 연구-',fx:{eco:5,res:-3}}];
-const CUT=[0,9,5,3], SCHOLAR=300, SCHOLAR_GPA=200; // 대학별 기준 수능 등급: 경남한빛대 누구나, 중앙과기대 5, 한국대 3
-const admitP=(t,g)=>t===1?100:clamp(60+(CUT[t]-g)*35,3,95);
+const SCHOLAR=300, SCHOLAR_GPA=200; // 입학 장학금은 tier 1 대학만
+const admitP=(cut,g)=>clamp(60+(cut-g)*35,3,95); // 기준 등급이면 60%, 한 등급마다 ±35%. cut 9인 대학은 늘 합격
+// 수능 뒤 합격한 대학 3곳: 합격한 곳 중 평판 최상·중간·최하를 하나씩. cut 9 대학이 3곳이라 언제나 3곳이 나온다.
+function rollAdmits(g,r=Math.random){const ok=UNIS.map((u,i)=>i).filter(i=>UNIS[i].cut>=9||r()*100<admitP(UNIS[i].cut,g)).sort((a,b)=>UNIS[b].rep-UNIS[a].rep);
+  return [...new Set([ok[0],ok[Math.floor((ok.length-1)/2)],ok[ok.length-1]])];}
+const ugName=()=>S.uni?S.uni.n:UG[S.ugTier].n;
 const HOME=['서울','경기','강원','충청','전라','경상','제주']; // ponytail: 고향은 아직 글에만 나온다. 지역(집값, 가족과의 거리)이 들어오는 전체 버전에서 연결.
 const GRAD=[null,{n:'남도대',req:25,rep:76},{n:'동해과기대',req:40,rep:85},{n:'한국대',req:55,rep:92}];
 // 대학원 진학 결과 카드: 분야별 세부 전공과 지도교수 유형별 특성(아이콘은 에셋/특성-*.webp).
@@ -788,7 +815,7 @@ if(!narrativeData||!narrativeModule){
   if(typeof document!=='undefined')document.getElementById('app').textContent='이야기 데이터를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
   throw new Error('scenario-data.js and scenario-engine.js must be uploaded beside nobel.html');
 }
-const Narrative=narrativeModule.create({state:()=>S,random:()=>rnd(),effect:(e,w)=>fx(e,w),log:(s)=>log(s),firstSentence:s=>split1(s)[0],school:()=>S.lab?S.lab.school:UG[S.ugTier].n},narrativeData);
+const Narrative=narrativeModule.create({state:()=>S,random:()=>rnd(),effect:(e,w)=>fx(e,w),log:(s)=>log(s),firstSentence:s=>split1(s)[0],school:()=>S.lab?S.lab.school:ugName()},narrativeData);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 // 조사: '이(가)' 같은 자리표시를 앞 글자 받침에 맞춰 고른다. 따옴표나 괄호 뒤에 붙어도 그 앞 한글을 본다.
 const JOSA={'이(가)':['이','가'],'와(과)':['과','와'],'을(를)':['을','를'],'은(는)':['은','는']};
@@ -869,28 +896,28 @@ function newLife(o){
      t:0,ss:0,stage:'ug',res:0,lec:0,eco:0,cha:0,hp:100,hpMax:100,joy:60,money:0,prog:0,papers:[],q:[],log:[],titles:[],flags:{},
      used:[],hosp:0,army:0,armyDone:false,defer:false,home:0,life:'mid',port:'dep',buy:{},lingo:0,end:null,lab:null,partner:null,pend:null};
   S.luck=Math.round(rnd()*20-10);
-  S.family=rnd()<.25?0:rnd()<.73?1:2;
+  S.family=o.family!=null?+o.family:rnd()<.25?0:rnd()<.73?1:2; S.decile=o.decile||FAM_INFO[S.family].q[0];
   const st=o.stats||rollStats(rnd); Object.assign(S,st); S.talent=talentOf(st);
   S.exam=o.exam||rollExam(S.res,rnd); fx(examFx(S.exam[3]));
   S.hs=HS[+o.hs||0]; fx(S.hs.fx); S.from=HOME[+o.home||0];
-  const hope=+o.tier||+o.hope||1+Math.floor(rnd()*3); // tier: 진학 결과 화면에서 고른 대학(이미 합격 판정됨)
-  S.ugTier=o.tier?+o.tier:rnd()*100<admitP(hope,S.exam[3])+S.luck?hope:1;
+  // o.uni: 진학 결과 화면에서 고른 대학(UNIS 번호). 없으면 합격한 3곳 중 하나를 무작위로.
+  const U=UNIS[o.uni!=null?+o.uni:pick(rollAdmits(S.exam[3],rnd))]; S.uni={n:U.n,region:U.region,rep:U.rep,tuition:U.tuition,tier:U.tier}; S.ugTier=U.tier;
   S.exempt=S.gender==='남'&&rnd()<.05; if(S.gender!=='남')S.armyDone=true;
-  S.money=[0,100,1000][S.family]+(hope===1?SCHOLAR:0);
+  S.money=[0,100,1000][S.family]+(U.tier===1?SCHOLAR:0);
   S.rival={...npc(rnd()<.5?'f':'m'),fav:2}; S.led={inc:0,exp:0};
   focus('study');
-  log(`${UG[S.ugTier].n} ${S.field}과 입학`);
+  log(`${U.n} ${S.field}과 입학`);
   const background=[
     '넉넉하지 않은 집안이었다. 필요한 것이 생기면 먼저 통장부터 확인하는 법을 배웠다.',
     '아주 넉넉하지도, 크게 부족하지도 않은 집안이었다. 부모님은 하고 싶은 일을 해 보라고 했다.',
     '집안은 넉넉한 편이었다. 적어도 당장의 생활비 때문에 꿈을 접을 필요는 없었다.'
   ][S.family];
   const talent={연구형:'모르는 문제를 만나면 끝까지 붙잡는 편이었다.',말발형:'어려운 이야기도 남에게 설명할 때면 제법 말이 술술 나왔다.',수완형:'주어진 기회를 어떻게 써야 할지 남들보다 조금 빨리 알아챘다.',인기형:'처음 보는 사람과도 금세 가까워졌다.',고른형:'아직 무엇 하나 두드러지지는 않았지만, 여러 가지를 고루 해내는 편이었다.'}[S.talent];
-  const admission=hope===1?`입학 장학금 ${SCHOLAR}만 원도 받았다. 통장에 찍힌 숫자가 조금 든든했다.`:S.ugTier!==hope?`바라던 ${UG[hope].n}의 합격 소식은 오지 않았다. 아쉬움은 남았지만, 여기서부터 시작하기로 했다.`:'합격 소식을 확인하던 순간의 기분이 아직 선명하다.';
+  const admission=U.tier===1?`입학 장학금 ${SCHOLAR}만 원도 받았다. 통장에 찍힌 숫자가 조금 든든했다.`:'합격 소식을 확인하던 순간의 기분이 아직 선명하다.';
   msg('스무 살, 첫 페이지',[
     `스무 살, ${S.name}. ${S.from}에서 자라 ${S.hs.n}를 졸업한 나는 이제 대학생이 되었다.`,
     background+' '+talent,
-    `${UG[S.ugTier].n} ${S.field}과. 앞으로 내 이름 뒤에 붙게 될 첫 번째 소속이다. ${admission}`,
+    `${U.n} ${S.field}과. 앞으로 내 이름 뒤에 붙게 될 첫 번째 소속이다. ${admission}`,
     S.exempt?'병역 면제 판정을 받았다. 남들보다 조금 먼저, 내 공부에 시간을 써 볼 수 있게 되었다.':'새 학기 시간표는 아직 비어 있다. 공부와 아르바이트, 새로운 사람들 사이에서 무엇에 시간을 쓸지는 내 몫이다.',
     '언젠가 세상에 남을 발견을 할 수도, 전혀 다른 길을 찾을 수도 있다. 아직 쓰이지 않은 이 인생의 첫 학기가 시작된다.'
   ].join('\n\n'));
@@ -942,6 +969,7 @@ function advance(){
     else if(career()){fx({money:CAREER[S.stage].pay},CAREER[S.stage].n+' 급여');fx({money:-760+RENT},'생활비');}
     else{fx({money:Math.round((S.stage==='ms'?600:960)*adv.pay+(S.lab.pres===3?120:0))},'인건비');fx({money:-760+RENT},'생활비');}
     if(!S.home)fx({money:-RENT},'월세');
+    if(S.stage==='ug'&&S.uni)fx({money:-Math.round(S.uni.tuition*[.5,.3,0][S.family])},'등록금'); // 집안 형편이 넉넉할수록 부모님이 대신 낸다. ponytail: 학자금 대출·국가장학금은 아직 없음
     const L=LIFE[S.life||'mid']; if(L.cost)fx({money:-L.cost},L.cost>0?'플렉스':'가성비 절약'); S.joy=clamp(S.joy+L.joy,0,100); }
   if(S.money>0){let g=S.money*yieldPct(S.port||'dep')/100; if(g>0)g*=.6+S.eco/125; g=Math.round(g); if(g)fx({money:g},'투자');}
   // 회복, 감소, 행복
@@ -1171,8 +1199,6 @@ if(typeof document!=='undefined'){
   const role=()=>S.army>0?'군 복무 중':S.stage==='ug'?(S.alloc.study>=50&&S.ss>=4?'학부 연구생':'학부생'):S.stage==='ms'?'석사과정':career()?CAREER[S.stage].n:'박사과정';
   const HOUSE='<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M7 1h2v1h1v1h1v1h1v1h1v1h1v1h1v2h-2v6H9v-4H7v4H3V9H1V7h1V6h1V5h1V4h1V3h1V2h1z"/></svg>';
   const hearts=n=>'호감 '+n+' / 5';
-  // 정시 합격 판정: 진학 결과 화면에 들어올 때 뽑은 난수로 정한다. 경남한빛대는 늘 합격.
-  const passed=t=>t===1||ui.form.admitRolls[t-1]*100<admitP(t,ui.form.exam[3]);
   const dhtml=(d,sep=', ')=>Object.entries(d).filter(([,v])=>Math.abs(v)>=.1).map(([k,v])=>`<span class="${v>0?'up':'down'}">${DN[k]} ${v>0?'+':''}${Math.round(v*10)/10}</span>`).join(sep);
   function home(){const d=store.get('nobel.dogam')||{titles:[],endings:[]};
     if(ui.screen==='people')return `<div class="scroll"><h2>인물</h2>${!S?'<p class="muted">진행 중인 인생이 없습니다.</p>':`<ul class="list panel">
@@ -1201,7 +1227,18 @@ if(typeof document!=='undefined'){
         <div class="tpick">${C.map((c,j)=>{const tj=talentOf(c);return `<button class="${j===i?'on':''}" data-a="form" data-k="pick" data-v="${j}" aria-pressed="${j===i}"><img src="에셋/재능-${tj}.webp" alt=""${tj==='연구형'?'':' class="sm"'}><b>${tj}</b></button>`;}).join('')}</div>
         <p class="tsum">시작 능력치의 합은 모두 200입니다</p>
       </div>
-      <button class="btn big" data-a="go" data-v="exam">이 재능으로 시작하기 →</button>`;}
+      <button class="btn big" data-a="go" data-v="card">이 재능으로 시작하기 →</button>`;}
+    // 인물 카드: 재능 선택 다음. 앞에서 정한 것과 집안 형편(이 화면 전에 이미 뽑혀 있다)을 한 장에 모아 보여 준다.
+    if(ui.screen==='card'){const f=ui.form, st=f.cands[+f.pick||0], t=talentOf(st), F=FAM_INFO[f.family];
+      return `<header class="top"><div class="trow"><button class="homebtn" data-a="go" data-v="talent" aria-label="뒤로">${BACK}</button><span class="tage">20세 · 입학 전</span><b class="who">${esc(f.name||'김연구')}</b><span class="ovr">OVR<b class="num">${ovr(st)}</b></span></div></header>
+      <div class="scroll pcard">
+        <div class="thead"><h1>인물 카드</h1><p>이 사람의 이야기가 시작됩니다</p></div>
+        <section class="panel frame"><div class="pc-top"><img src="에셋/재능-${t}.webp" alt=""><span class="uc-name"><b>${esc(f.name||'김연구')}</b><small>${f.gender}성 · 20세 · ${esc(f.field)} 지망</small></span></div><i class="rule" aria-hidden="true"></i>
+          <span class="uc-rows"><span><i>재능형</i><b>${t}</b></span><span><i></i><b class="pc-d">${TALENT_D[t]}</b></span><span><i>출신 고교</i><b>${HS[+f.hs||0].n} (${HS[+f.hs||0].d})</b></span><span><i>고향</i><b>${HOME[+f.home||0]}</b></span></span></section>
+        <section class="panel frame"><div class="pc-top solo"><span class="uc-name"><b>집안 형편 · ${FAMILY[f.family]}</b><small>${F.d}</small></span></div><i class="rule" aria-hidden="true"></i>
+          <span class="uc-rows"><span><i>소득 분위</i><b class="num">${f.decile}분위</b></span><span><i>월 용돈</i><b class="num">${F.allow?F.allow+'만 원':'없음'}</b></span><span><i>시작 자산</i><b class="num">${F.assets?won(F.assets):'0원'}</b></span></span></section>
+      </div>
+      <button class="btn big" data-a="go" data-v="exam">고3 시절로 →</button>`;}
     if(ui.screen==='exam'){const f=ui.form, E=f.exam, n=ui.examStep, done=n>=EXAMS.length;
       const say=['고3이 시작되었다. 첫 모의고사가 다가온다.','첫 성적표를 받았다. 아직 시간은 있다.','6월 모의고사. 여름이 지나면 금방이다.','9월 모의고사. 이제 수능만 남았다.','수능을 마쳤다. 이제 다음 문을 열 차례다.'][n];
       return `<div class="scroll exam">
@@ -1224,15 +1261,14 @@ if(typeof document!=='undefined'){
       </div>
       <button class="btn big" data-a="go" data-v="result">진학 결과 보기 →</button>`;}
     // 진학 결과: 에셋/진학-결과-시안-A. 정시 3곳의 판정을 보여 주고 합격한 대학 중 하나를 고른다.
-    if(ui.screen==='result'){const f=ui.form, g=f.exam[3], ok=[3,2,1].filter(passed);
-      return `<div class="scroll uresult"><header class="ur-band"><h1>진학 결과</h1></header><p class="ur-sub"><span>새로운 연구의 시작</span></p><p class="ur-count"><span>합격한 대학 ${ok.length}곳</span></p>
-      <div class="ur-list" role="radiogroup" aria-label="진학할 대학">${[3,2,1].map(t=>{const U=UG[t], pass=passed(t), on=+f.uni===t;
-        const inner=`<span class="uc-top"><img src="에셋/교표-${U.n}.webp" alt=""><span class="uc-name"><b>${U.n}</b><small>${esc(f.field)}과 학사과정</small></span><span class="uc-stamp${pass?'':' no'}">${pass?'합격':'불합격'}</span></span>
-          <span class="uc-rows"><span><i>소재지</i><b>${U.region}</b></span><span><i>지원 기준</i><b>${t===1?'제한 없음':`수능 ${CUT[t]}등급 이내`}</b></span><span><i>입학 장학금</i><b>${t===1?SCHOLAR+'만 원':'없음'}</b></span></span>
-          <span class="uc-foot"><span>대학 평판<b class="num">${U.rep}</b></span><span>합격 확률<b class="num">${admitP(t,g)}%</b></span></span>`;
-        return pass?`<button class="ucard${on?' on':''}" data-a="uni" data-v="${t}" role="radio" aria-checked="${on}">${inner}</button>`:`<div class="ucard off">${inner}</div>`;}).join('')}</div>
-      <p class="hint">수능 ${g}등급${ok.length>1?' · 진학할 대학을 고르세요':''}</p><p class="ur-note">가상 학교 예시</p></div>
-      <button class="btn big" data-a="born">확인</button>`;}
+    if(ui.screen==='result'){const f=ui.form, g=f.exam[3];
+      return `<div class="uresult"><header class="ur-band"><h1>진학 결과</h1></header><p class="ur-count"><span>합격한 대학 ${f.unis.length}곳</span></p>
+      <div class="ur-list" role="radiogroup" aria-label="진학할 대학">${f.unis.map(i=>{const U=UNIS[i], on=+f.uni===i;
+        return `<button class="ucard${on?' on':''}" data-a="uni" data-v="${i}" role="radio" aria-checked="${on}">
+          <span class="uc-top"><span class="uc-emb" aria-hidden="true">${U.n[0]}</span><span class="uc-name"><b>${U.n}</b><small>${esc(f.field)}과 학사과정</small></span><span class="uc-stamp">합격</span></span>
+          <span class="uc-cut">지원 기준 · ${U.cut>=9?'수능 등급 제한 없음':`수능 ${U.cut}등급 이내`}</span><span class="uc-info"><span><i>소재지</i><b>${U.region}</b></span><span><i>등록금</i><b class="num">${U.tuition}만</b></span><span><i>평판</i><b class="num">${U.rep}</b></span><span><i>장학금</i><b>${U.tier===1?SCHOLAR+'만':'없음'}</b></span></span></button>`;}).join('')}</div>
+      <p class="hint">수능 ${g}등급 · 진학할 대학을 고르세요 · 등록금은 학기당</p>
+      <button class="btn big" data-a="born">확인</button></div>`;}
     const live=S&&!S.end;
     return `<div class="stage"><img src="에셋/홈-무대.webp" alt="노벨상 키우기"></div>
       <button class="btn big" data-a="go" data-v="game" ${live?'':'disabled'}>이어하기${live?` (${age()}세)`:''}</button>
@@ -1381,7 +1417,7 @@ if(typeof document!=='undefined'){
           ${live?SPD.map(x=>`<button class="tbtn sp${(ui.speed||1)===x?' on':''}" data-a="speed" data-v="${x}" aria-label="${x}배속">${x}×</button>`).join('')+`<button class="tbtn" data-a="play" ${run?'':'disabled'} aria-label="다음 2주">»</button>`:''}</div></section>
       <div class="scroll">
       <section class="card pg"><img class="view" src="에셋/진행-배경.webp" alt="연구실 앞 교정">
-        <p class="idl"><b>${age()}세</b><i>·</i><b>${role()}</b><i>·</i><b>${esc(S.lab?S.lab.school:UG[S.ugTier]?UG[S.ugTier].n:'')}</b></p>
+        <p class="idl"><b>${age()}세</b><i>·</i><b>${role()}</b><i>·</i><b>${esc(S.lab?S.lab.school:ugName())}</b></p>
         <p class="mny"><span><small>총 자산</small><b class="num">${won(asset(S))}</b></span><span><small>월 소득</small><b class="num up">${won(((live?S.led.inc:S.inc0)||0)/4)}</b></span><span><small>월 비용</small><b class="num down">${won(((live?S.led.exp:S.exp0)||0)/4)}</b></span></p></section>
       <section class="card sg"><div class="sgs">${['lec','res','cha','eco','joy'].map(cell).join('')}</div></section>
       <section class="card book"><header><h2>학기 기록</h2><div class="ctl"><button class="${ui.fopen?'on':''}" data-a="fopen" aria-expanded="${!!ui.fopen}" title="${live?'다음 학기 초점':'초점'}"><small>초점</small><b>${P.focN}</b><i aria-hidden="true">${ui.fopen?'▴':'▾'}</i></button><button data-a="sheet"><b>선택</b></button></div></header>
@@ -1508,11 +1544,11 @@ if(typeof document!=='undefined'){
   app.addEventListener('input',e=>{const k=e.target.dataset.k;if(k)ui.form[k]=e.target.value;});
   function onAction(e){
     const b=e.target.closest('[data-a]'); if(!b||b.disabled)return; const a=b.dataset.a,v=b.dataset.v;
-    if(a==='go'){ui.from=ui.screen;ui.screen=v;ui.sheet=null; if(v==='talent'){ui.form.cands=[0,1,2].map(()=>rollStats());ui.form.pick=0;} if(v==='exam'){ui.form.exam=rollExam(ui.form.cands[+ui.form.pick].res);ui.examStep=0;} if(v==='result'){ui.form.admitRolls=[0,1,2].map(()=>Math.random());ui.form.uni=[3,2,1].find(passed);}} // 들어올 때마다 후보 3개를 새로 뽑는다
+    if(a==='go'){ui.from=ui.screen;ui.screen=v;ui.sheet=null; if(v==='talent'&&ui.from!=='card'){ui.form.cands=[0,1,2].map(()=>rollStats());ui.form.pick=0;Object.assign(ui.form,rollFamily());} if(v==='exam'){ui.form.exam=rollExam(ui.form.cands[+ui.form.pick].res);ui.examStep=0;} if(v==='result'){ui.form.unis=rollAdmits(ui.form.exam[3]);ui.form.uni=ui.form.unis[0];}} // 들어올 때마다 후보 3개를 새로 뽑는다
     else if(a==='form')ui.form[b.dataset.k]=v;
     else if(a==='skip')ui.examStep=EXAMS.length;
-    else if(a==='uni'&&passed(+v))ui.form.uni=+v;
-    else if(a==='born'){newLife({...ui.form,tier:ui.form.uni,stats:ui.form.cands[+ui.form.pick]});ui.screen='game';ui.paused=false;}
+    else if(a==='uni'&&ui.form.unis.includes(+v))ui.form.uni=+v;
+    else if(a==='born'){newLife({...ui.form,uni:ui.form.uni,family:ui.form.family,decile:ui.form.decile,stats:ui.form.cands[+ui.form.pick]});ui.screen='game';ui.paused=false;}
     else if(a==='gpick')ui.gpick=+v;
     else if(a==='story'){const c=storyCard();if(c){if((c.shown||0)<Array.from(c.body.replace(/\n\n/g,'')).length){c.shown=Array.from(c.body.replace(/\n\n/g,'')).length;save();}else{resolve(0);if(S&&!S.end&&!S.q.length&&!S.pend){ui.paused=false;ui.logN=6;advance();}}}} // 프롤로그가 끝나면 개강 전 화면 없이 첫 학기를 바로 시작
     else if(a==='next'){ui.paused=false;ui.sheet=null;ui.logN=6;advance();}
