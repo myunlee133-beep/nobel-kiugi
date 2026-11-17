@@ -85,7 +85,7 @@ assert.match(dialog.innerHTML, /학계를 떠날까요/);
 dialog.listeners.cancel({preventDefault(){}});
 assert.equal(dialog.open, false);
 assert.equal(run('!!S.end'), false, 'Escape cancels retirement');
-run("S.q=[{k:'msg',title:'<img src=x>',body:'<script>alert(1)</script>',stamp:'<b>메달</b>'}]; UI.render();");
+run("S.pend=null; S.q=[{k:'msg',title:'<img src=x>',body:'<script>alert(1)</script>',stamp:'<b>메달</b>'}]; UI.render();");
 assert.match(dialog.innerHTML, /&lt;img src=x&gt;/);
 assert.match(dialog.innerHTML, /&lt;script&gt;/);
 assert.doesNotMatch(dialog.innerHTML, /<script>/);

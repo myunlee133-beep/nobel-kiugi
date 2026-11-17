@@ -1290,8 +1290,10 @@ if(typeof document!=='undefined'){
         <ul class="fxl dot">${lines.map(([n,v])=>`<li><span>${esc(n)}</span><b class="num ${cl(v)}">${sgw(v)}</b></li>`).join('')||'<li><span class="muted">돈이 오가지 않았다</span></li>'}</ul></div>`,sgw(net))}
       ${FD('s_rel','관계',`<ul class="lv">${ppl.map(p=>`<li><span>${p[2]}</span><div><b>${esc(p[1])} · 친밀도 <span class="num">${p[4]}</span>${dv(p)?` <em class="num ${cl(dv(p))}">${sg(dv(p))}</em>`:''}</b><small>${p[6]?'신규 · ':''}${esc(p[3])}</small></div></li>`).join('')}</ul>
         ${bye?`<p class="muted fxn">${josa(esc(c.p0)+'와(과) 헤어졌다.')}</p>`:''}`,relNote)}
-      <div class="row lnks"><button class="lnk" data-a="retire">은퇴</button><button class="lnk" data-a="go" data-v="create">다시 태어나기</button></div></div>
-      <button class="btn big" data-a="res" data-v="0">다음 학기 →</button>`;
+      ${FD('s_state','현재 상태',picks().recUI,'')}</div>
+      <section class="card endbox"><button class="btn big" data-a="res" data-v="0">다음 학기 →</button>
+        <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
+          <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section>`;
   }
   // 초점과 선택(투자·관계·학업): 2026-11-16부터 따로 화면을 두지 않고 인게임 화면(progress) 안의 초점 칩과 선택 시트로 보여 준다. picks()는 그 조각들을 만든다.
   const FSUB={lec:'수업과 발표',res:'탐구와 논문',cha:'소통과 만남',eco:'수입과 자산',joy:'휴식과 일상'}, FICO={lec:'강의',res:'연구',cha:'매력',eco:'코인',joy:'행복'};
@@ -1372,7 +1374,7 @@ if(typeof document!=='undefined'){
         ${ui.fopen?`<div class="focbox">${live&&!S.army?'<p class="hint">지금 바꾸면 다음 학기부터 적용됩니다</p>':''}${P.focUI}</div>`:''}
         <div class="recl">${logs.slice(0,ui.logN||6).map((l,i)=>`<div class="rec${i===0&&ui.flash===n?' new':''}"><span class="num">${l.mo?wk(l)+'주':'소식'}</span><p>${esc(l.s)}${l.sub?` <small>${esc(l.sub)}</small>`:''}${dtxt(l.d)?` <em class="dd">${dhtml(l.d,' ')}</em>`:''}</p></div>`).join('')||`<p class="muted recn">${live?'새 학기가 시작됐다.':'개강을 누르면 학기가 시작된다.'}</p>`}</div>
         ${logs.length>(ui.logN||6)?`<button class="lnk more" data-a="more">이전 기록 ${logs.length-(ui.logN||6)}개 더 보기</button>`:''}</section>
-      ${live?'':`${P.fold('현재 상태',P.recUI)}<section class="card endbox"><button class="btn big" data-a="next">개강 →</button>
+      ${live?'':`<section class="card endbox"><button class="btn big" data-a="next">개강 →</button>
         <div class="row"><button class="btn ghost grow" data-a="retire"><img src="에셋/아이콘-은퇴.webp" alt="">은퇴</button>
           <button class="btn ghost grow" data-a="go" data-v="create"><img src="에셋/아이콘-환생.webp" alt="">다시 태어나기</button></div></section>`}</div>${sheet}`;
   }
@@ -1400,7 +1402,7 @@ if(typeof document!=='undefined'){
       let remaining=shown;
       nodes.forEach((el,i)=>{const n=Math.min(remaining,parts[i].length);el.hidden=n===0;el.textContent=parts[i].slice(0,n).join('');el.classList.toggle('current',n>0&&n<parts[i].length);remaining-=n;});
       const done=shown===total;
-      app.querySelector('[data-a="story"]').textContent=done?'첫 학기 계획하기 →':'이야기 바로 보기';
+      app.querySelector('[data-a="story"]').textContent=done?'첫 학기 시작하기 →':'이야기 바로 보기';
       app.querySelector('.story-hint').textContent=done?'이제, 나의 시간을 정할 차례다.':'나의 이야기가 펼쳐지고 있습니다';
       if(follow)sc.scrollTop=sc.scrollHeight;
       c.shown=shown;
@@ -1498,7 +1500,7 @@ if(typeof document!=='undefined'){
     else if(a==='uni'&&passed(+v))ui.form.uni=+v;
     else if(a==='born'){newLife({...ui.form,tier:ui.form.uni,stats:ui.form.cands[+ui.form.pick]});ui.screen='game';ui.paused=false;}
     else if(a==='gpick')ui.gpick=+v;
-    else if(a==='story'){const c=storyCard();if(c){if((c.shown||0)<Array.from(c.body.replace(/\n\n/g,'')).length){c.shown=Array.from(c.body.replace(/\n\n/g,'')).length;save();}else resolve(0);}}
+    else if(a==='story'){const c=storyCard();if(c){if((c.shown||0)<Array.from(c.body.replace(/\n\n/g,'')).length){c.shown=Array.from(c.body.replace(/\n\n/g,'')).length;save();}else{resolve(0);if(S&&!S.end&&!S.q.length&&!S.pend){ui.paused=false;ui.logN=6;advance();}}}} // 프롤로그가 끝나면 개강 전 화면 없이 첫 학기를 바로 시작
     else if(a==='next'){ui.paused=false;ui.sheet=null;ui.logN=6;advance();}
     else if(a==='fopen')ui.fopen=!ui.fopen;
     else if(a==='more')ui.logN=(ui.logN||6)+6;
@@ -1507,7 +1509,8 @@ if(typeof document!=='undefined'){
     else if(a==='pause')ui.paused=!ui.paused;
     else if(a==='speed'){ui.speed=+v;ui.paused=false;}
     else if(a==='play'){ui.paused=false; if(S.pend&&!waiting()){reveal();ui.flash=S.log.length;}} // 기다리지 않고 바로 2주를 넘긴다
-    else if(a==='res'){ui.fold.s_fin=ui.fold.s_rel=false;const current=view(), i=Number(v);if(!Number.isInteger(i)||!current||!current.ch[i]||current.ch[i].lock)return;resolve(i);ui.gpick=0;}
+    else if(a==='res'){ui.fold.s_fin=ui.fold.s_rel=false;const current=view(), i=Number(v);if(!Number.isInteger(i)||!current||!current.ch[i]||current.ch[i].lock)return;resolve(i);ui.gpick=0;
+      if(S&&!S.end&&!S.q.length&&!S.pend){ui.paused=false;ui.logN=6;advance();}} // 카드를 다 치르면(결산·갈림길 모두) 개강 전 화면 없이 바로 다음 학기
     else if(a==='focus'){focus(v);save();}
     else if(a==='act'){S.act=S.act===v?null:v;save();}
     else if(a==='buy'){S.buy=S.buy||{};S.buy[v]=!S.buy[v];save();}
